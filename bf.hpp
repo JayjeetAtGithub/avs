@@ -38,7 +38,6 @@ class KNNSearch {
             while (idx < _dataset.size()) {
                 int32_t curr_batch_size = std::min(
                     _batch_size, (int32_t)_dataset.size() - idx);
-                std::cout << "searching batch of size: " << curr_batch_size << std::endl;
                 std::vector<std::vector<float>> curr_batch(
                     _dataset.begin() + idx, _dataset.begin() + idx + curr_batch_size);
                 avs::vecf32_t distances = avs::l2_distance(query, curr_batch);
