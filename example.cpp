@@ -51,7 +51,6 @@ int main(int argc, char **argv) {
     auto e = std::chrono::high_resolution_clock::now();
 
     auto dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
-    std::cout << dur_ms << std::endl;
     double qps = (double)dataset_size / (double)dur_ms;
     std::cout << "QPS: " << qps << std::endl;
 
