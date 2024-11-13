@@ -30,7 +30,8 @@ int main(int argc, char **argv) {
 
     auto knn_index = new avs::KNNSearch(dim, batch_size);
 
-    while (dataset_size--) {
+    auto d = dataset_size;
+    while (d--) {
         std::vector<float> batch;
         for (int i = 0; i < dim; i++) {
             batch.push_back(distrib(rng));
@@ -49,8 +50,9 @@ int main(int argc, char **argv) {
     knn_index->search(query);
     auto e = std::chrono::high_resolution_clock::now();
 
-    double dur_ms = (double)std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
-    double qps = (double)(dataset_size) / dur_ms;
+    auto dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
+    std::cout << dur_ms << std::endl;
+    double qps = (double)dataset_size / (double)dur_ms;
     std::cout << "QPS: " << qps << std::endl;
 
     auto result = knn_index->top_k(top_k);
