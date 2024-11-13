@@ -49,8 +49,8 @@ int main(int argc, char **argv) {
     knn_index->search(query);
     auto e = std::chrono::high_resolution_clock::now();
 
-    auto dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
-    double qps = (double)(dataset_size / dur_ms);
+    double dur_ms = (double)std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
+    double qps = (double)(dataset_size) / dur_ms;
     std::cout << "QPS: " << qps << std::endl;
 
     auto result = knn_index->top_k(top_k);
