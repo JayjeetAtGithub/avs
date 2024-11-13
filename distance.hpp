@@ -45,16 +45,15 @@ inline static bool is_amxbf16_supported() {
 
 __attribute__((constructor)) static void lib_load() {
     init_onednn();
-    // if (is_amxbf16_supported()) {
-    //     std::cout << "Intel AMX BF16 Supported." << std::endl;
-    // } else {
-    //     std::cout << "Intel AMX bf16 not supported. Aborting." << std::endl;
-    //     exit(1);
-    // }
+    if (is_amxbf16_supported()) {
+        std::cout << "Intel AMX BF16 Supported." << std::endl;
+    } else {
+        std::cout << "Intel AMX bf16 not supported. Aborting." << std::endl;
+        exit(1);
+    }
 }
 
 __attribute__((destructor)) static void lib_unload();
-
 
 /**
  * @brief Substract two fp32 vectors using avx512 intrinsics.
@@ -149,7 +148,6 @@ std::vector<float> amx_matmul(
     avs::vecf32_t &query, avs::matf32_t &batch) {
     const int64_t batch_size = batch.size();
     const int64_t dim = batch[0].size();
-
     std::vector<std::vector<float>> dis_2d = avx512_subtract_batch(query, batch);
     std::vector<std::vector<float>> dis_2d_t(
         dis_2d[0].size(), std::vector<float>(dis_2d.size(), 0.0f));
@@ -158,22 +156,29 @@ std::vector<float> amx_matmul(
             dis_2d_t[i][j] = dis_2d[j][i];
         }
     }
-
     std::vector<float> dis_1d(batch_size * dim);
     for (int i = 0; i < batch_size; i++) {
         for (int j = 0; j < dim; j++) {
             dis_1d[i * dim + j] = dis_2d[i][j];
         }
     }
-
     std::vector<float> dis_1d_t(batch_size * dim);
     for (int i = 0; i < dim; i++) {
         for (int j = 0; j < batch_size; j++) {
             dis_1d_t[i * batch_size + j] = dis_2d_t[i][j];
         }
     }
-    
     return amx_matmul(batch_size, dim, dis_1d, dis_1d_t);
 }
+
+// [[nodiscard]] static std::vector<float> l2_distance(
+//     avs::vecf32_t &query, avs::matf32_t &batch) {
+//     const int64_t batch_size = batch.size();
+//     const int64_t dim = batch[0].size();
+//     std::vector<std::vector<float>> dis_2d = avx512_subtract_batch(query, batch);
+    
+   
+
+// }
 
 } // namespace avs
