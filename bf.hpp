@@ -12,9 +12,24 @@ class KNNSearch {
     avs::matf32_t _dataset;
     std::priority_queue<float, std::vector<float>, std::greater<float>> pq;
 
+    dnnl::engine engine;
+    dnnl::stream stream;
+    std::mutex mtx;
+
     public:
+        void init_onednn() {
+            std::unique_lock<std::mutex> lock(mtx);
+            engine = dnnl::engine(dnnl::engine::kind::cpu, 0);
+            stream = dnnl::stream(engine);
+        }
+
         KNNSearch(int32_t dim, int32_t batch_size)
-            : _dim(dim), _batch_size(batch_size) {}
+            : _dim(dim), _batch_size(batch_size) {
+                init_onednn();
+                if (!avs::is_amxbf16_supported()) {
+                    std::cout << "Intel AMX unavailable" << std::endl;
+                }
+            }
 
         void add(avs::vecf32_t point) {
             _dataset.push_back(point);
@@ -40,7 +55,8 @@ class KNNSearch {
                     _batch_size, (int32_t)_dataset.size() - idx);
                 std::vector<std::vector<float>> curr_batch(
                     _dataset.begin() + idx, _dataset.begin() + idx + curr_batch_size);
-                avs::vecf32_t distances = avs::l2_distance(query, curr_batch);
+                avs::vecf32_t distances = avs::l2_distance(
+                    query, curr_batch, engine, stream);
                 for (auto const &d : distances) pq.push(d);
                 idx += curr_batch_size;
             }

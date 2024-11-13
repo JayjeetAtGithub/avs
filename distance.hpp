@@ -16,23 +16,8 @@
 
 namespace avs {
 
-static dnnl::engine engine;
-static dnnl::stream stream;
-static bool is_onednn_init = false;
-static std::mutex mtx;
-
 using tag = dnnl::memory::format_tag;
 using dt = dnnl::memory::data_type;
-
-static void init_onednn() {
-    std::unique_lock<std::mutex> lock(mtx);
-    if (is_onednn_init) {
-        return;
-    }
-    engine = dnnl::engine(dnnl::engine::kind::cpu, 0);
-    stream = dnnl::stream(engine);
-    is_onednn_init = true;
-}
 
 inline static bool is_amxbf16_supported() {
     unsigned int eax, ebx, ecx, edx;
@@ -41,19 +26,6 @@ inline static bool is_amxbf16_supported() {
                          : "a"(7), "c"(0));
     return edx & (1 << 22);
 }
-
-
-__attribute__((constructor)) static void lib_load() {
-    init_onednn();
-    if (is_amxbf16_supported()) {
-        std::cout << "Intel AMX BF16 Supported." << std::endl;
-    } else {
-        std::cout << "Intel AMX bf16 not supported. Aborting." << std::endl;
-        exit(1);
-    }
-}
-
-__attribute__((destructor)) static void lib_unload();
 
 /**
  * @brief Substract two fp32 vectors using avx512 intrinsics.
@@ -92,7 +64,8 @@ avx512_subtract_batch(std::vector<float> query, std::vector<std::vector<float>> 
 }
 
 std::vector<float> amx_matmul(
-    const int64_t &r, const int64_t &c, std::vector<float> &m, std::vector<float> &mt) {
+    const int64_t &r, const int64_t &c, std::vector<float> &m, std::vector<float> &mt,
+    dnnl::engine &engine, dnnl::stream &stream) {
     std::vector<float> dst(r * r, 2.5f);
 
     dnnl::memory::dims a_dims = {r, c};
@@ -145,7 +118,7 @@ std::vector<float> amx_matmul(
 }
 
 [[nodiscard]] static std::vector<float> l2_distance(
-    avs::vecf32_t &query, avs::matf32_t &batch) {
+    avs::vecf32_t &query, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
     const int64_t batch_size = batch.size();
     const int64_t dim = batch[0].size();
     std::vector<std::vector<float>> dis_2d = avx512_subtract_batch(query, batch);
@@ -168,17 +141,7 @@ std::vector<float> amx_matmul(
             dis_1d_t[i * batch_size + j] = dis_2d_t[i][j];
         }
     }
-    return amx_matmul(batch_size, dim, dis_1d, dis_1d_t);
+    return amx_matmul(batch_size, dim, dis_1d, dis_1d_t, engine, stream);
 }
-
-// [[nodiscard]] static std::vector<float> l2_distance(
-//     avs::vecf32_t &query, avs::matf32_t &batch) {
-//     const int64_t batch_size = batch.size();
-//     const int64_t dim = batch[0].size();
-//     std::vector<std::vector<float>> dis_2d = avx512_subtract_batch(query, batch);
-    
-   
-
-// }
 
 } // namespace avs
