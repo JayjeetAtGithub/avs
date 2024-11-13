@@ -35,4 +35,10 @@ int main(int argc, char **argv) {
     knn_index->search(query);
     auto e = std::chrono::high_resolution_clock::now();
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count() << std::endl;
+
+    auto result = knn_index->top_k(10);
+    for (auto const &v : result) {
+        std::cout << v << " ";
+    }
+    std::cout << std::endl;
 }
