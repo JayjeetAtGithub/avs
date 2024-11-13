@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
     CLI::App app{"Accelerated Vector Search"};
     argv = app.ensure_utf8(argv);
 
-    int32_t dim = dim;
+    int32_t dim = 16;
     app.add_option("-d,--dim", dim, "The dimension of the vectors");
 
     int64_t top_k = 10;
