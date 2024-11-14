@@ -6,6 +6,17 @@
 #include "CLI11.hpp"
 
 
+void print_matrix(std::vector<std::vector<float>> &mat) {
+    for (int i = 0; i < mat.size(); i++) {
+        for (int j = 0; j < mat[0].size(); j++) {
+            std::cout << mat[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+
 int main(int argc, char **argv) {
     CLI::App app{"Accelerated Vector Search"};
     argv = app.ensure_utf8(argv);
@@ -58,35 +69,27 @@ int main(int argc, char **argv) {
     std::cout << "Dimension of query vectors: " << queries[0].size() << std::endl;
 
     auto s = std::chrono::high_resolution_clock::now();
-    knn_index->search_l2_vanilla(queries[0]);
+    auto result = knn_index->search_l2_vanilla(queries, top_k);
     auto e = std::chrono::high_resolution_clock::now();
     auto dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
     std::cout << "Duration (L2 vanilla): " << dur_ms << std::endl;
-    auto result = knn_index->top_k(top_k);
-    for (auto const &v : result) {
-        std::cout << v << " ";
-    }
-    std::cout << std::endl;
+    print_matrix(result);
 
     s = std::chrono::high_resolution_clock::now();
-    knn_index->search_l2(queries[0]);
+    result = knn_index->search_l2_amx(queries, top_k);
     e = std::chrono::high_resolution_clock::now();
     dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
     std::cout << "Duration (L2 AMX): " << dur_ms << std::endl;
-    result = knn_index->top_k(top_k);
-    for (auto const &v : result) {
-        std::cout << v << " ";
-    }
-    std::cout << std::endl;
+    print_matrix(result);
 
-    s = std::chrono::high_resolution_clock::now();
-    knn_index->search_ip(queries);
-    e = std::chrono::high_resolution_clock::now();
-    dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
-    std::cout << "Duration (IP AMX): " << dur_ms << std::endl;
-    result = knn_index->top_k(top_k);
-    for (auto const &v : result) {
-        std::cout << v << " ";
-    }
-    std::cout << std::endl;
+    // s = std::chrono::high_resolution_clock::now();
+    // knn_index->search_ip(queries);
+    // e = std::chrono::high_resolution_clock::now();
+    // dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
+    // std::cout << "Duration (IP AMX): " << dur_ms << std::endl;
+    // result = knn_index->top_k(top_k);
+    // for (auto const &v : result) {
+    //     std::cout << v << " ";
+    // }
+    // std::cout << std::endl;
 }

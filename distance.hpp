@@ -211,8 +211,8 @@ std::vector<std::vector<float>> amx_inner_product(
 }
 
 
-[[nodiscard]] static std::vector<float> l2_distance(
-    avs::vecf32_t &query, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
+[[nodiscard]] static std::vector<float> l2_distance_amx(
+    const avs::vecf32_t &query, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
     const int64_t batch_size = batch.size();
     const int64_t dim = batch[0].size();
     std::vector<std::vector<float>> dis_2d = avx512_subtract_batch(query, batch);
@@ -254,7 +254,7 @@ static float L2Sqr(const void *vec1, const void *vec2, const int32_t dim) {
 }
 
 [[nodiscard]] static std::vector<float> l2_distance_vanilla(
-    avs::vecf32_t &query, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
+    const avs::vecf32_t &query, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
     const int64_t dim = batch[0].size();
 
     std::vector<float> res;
