@@ -82,14 +82,10 @@ int main(int argc, char **argv) {
     std::cout << "Duration (L2 AMX): " << dur_ms << std::endl;
     print_matrix(result);
 
-    // s = std::chrono::high_resolution_clock::now();
-    // knn_index->search_ip(queries);
-    // e = std::chrono::high_resolution_clock::now();
-    // dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
-    // std::cout << "Duration (IP AMX): " << dur_ms << std::endl;
-    // result = knn_index->top_k(top_k);
-    // for (auto const &v : result) {
-    //     std::cout << v << " ";
-    // }
-    // std::cout << std::endl;
+    s = std::chrono::high_resolution_clock::now();
+    result = knn_index->search_ip(queries, top_k);
+    e = std::chrono::high_resolution_clock::now();
+    dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
+    std::cout << "Duration (IP AMX): " << dur_ms << std::endl;
+    print_matrix(result);
 }
