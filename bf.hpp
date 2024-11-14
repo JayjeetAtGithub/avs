@@ -39,7 +39,9 @@ class KNNSearch {
         }
 
         avs::matf32_t search_ip(matf32_t queries, int32_t top_k) {
-            std::vector<std::vector<float>> results;
+            std::vector<std::vector<float>> results(
+                queries.size(), std::vector<float>(top_k, 0.0f)
+            );
             std::unordered_map
                 <
                     int32_t, 
@@ -62,20 +64,18 @@ class KNNSearch {
             }
 
             for (int i = 0; i < queries.size(); i++) {
-                std::vector<float> q_dis;
-                int32_t k = top_k;
-                while(k--) {
-                    q_dis.push_back(map[i].top());
+                int32_t k_idx = 0;
+                while(k_idx < top_k) {
+                    results[i][k_idx++] = map[i].top();
                     map[i].pop();
                 }
-                results.push_back(q_dis);
             }
             return results;
         }
 
         avs::matf32_t search_l2_amx(matf32_t queries, int32_t top_k) {
             std::vector<std::vector<float>> results;
-            for (auto const &query : queries) {
+            for (int i = 0; i < queries.size(); i++) {
                 std::priority_queue<float, std::vector<float>, std::greater<float>> pq;
                 int32_t idx = 0;
                 while (idx < _dataset.size()) {
@@ -84,26 +84,24 @@ class KNNSearch {
                     std::vector<std::vector<float>> curr_batch(
                         _dataset.begin() + idx, _dataset.begin() + idx + curr_batch_size);
                     avs::vecf32_t distances = avs::l2_distance_amx(
-                        query, curr_batch, engine, stream);
+                        queries[i], curr_batch, engine, stream);
                     for (auto const &d : distances) {
                         pq.push(d);
                     }
                     idx += curr_batch_size;
                 }
-                std::vector<float> q_res;
-                int32_t k = top_k;
-                while(k--) {
-                    q_res.push_back(pq.top());
+                int32_t k_idx = 0;
+                while(k_idx < top_k) {
+                    results[i][k_idx++] = pq.top();
                     pq.pop();
                 }
-                results.push_back(q_res);
             }
             return results;
         }
 
         avs::matf32_t search_l2_vanilla(matf32_t queries, int32_t top_k) {
             std::vector<std::vector<float>> results;
-            for (auto const &query : queries) {
+            for (int i = 0; i < queries.size(); i++) {
                 std::priority_queue<float, std::vector<float>, std::greater<float>> pq;
                 int32_t idx = 0;
                 while (idx < _dataset.size()) {
@@ -112,19 +110,17 @@ class KNNSearch {
                     std::vector<std::vector<float>> curr_batch(
                         _dataset.begin() + idx, _dataset.begin() + idx + curr_batch_size);
                     avs::vecf32_t distances = avs::l2_distance_vanilla(
-                        query, curr_batch, engine, stream);
+                        queries[i], curr_batch, engine, stream);
                     for (auto const &d : distances) {
                         pq.push(d);
                     }
                     idx += curr_batch_size;
                 }
-                std::vector<float> q_res;
-                int32_t k = top_k;
-                while(k--) {
-                    q_res.push_back(pq.top());
+                int32_t k_idx = 0;
+                while(k_idx < top_k) {
+                    results[i][k_idx++] = pq.top();
                     pq.pop();
                 }
-                results.push_back(q_res);
             }
             return results;
         }
