@@ -48,7 +48,25 @@ class KNNSearch {
             return result;
         }
 
-        void search(vecf32_t query) {
+        void search_ip(matf32_t queries) {
+            int32_t idx = 0;
+            while (idx < _dataset.size()) {
+                int32_t curr_batch_size = std::min(
+                    _batch_size, (int32_t)_dataset.size() - idx);
+                std::vector<std::vector<float>> curr_batch(
+                    _dataset.begin() + idx, _dataset.begin() + idx + curr_batch_size);
+                avs::matf32_t distances = avs::ip_distance(
+                    queries, curr_batch, engine, stream);
+                for (auto const row : distances) {
+                    for (auto const ele : row) {
+                        pq.push(ele);
+                    }
+                }
+                idx += curr_batch_size;
+            }
+        }
+
+        void search_l2(vecf32_t query) {
             int32_t idx = 0;
             while (idx < _dataset.size()) {
                 int32_t curr_batch_size = std::min(
