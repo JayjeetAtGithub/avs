@@ -257,10 +257,10 @@ static float L2Sqr(const void *vec1, const void *vec2, const int32_t dim) {
     const avs::vecf32_t &query, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
     const int64_t dim = batch[0].size();
 
-    std::vector<float> res;
+    std::vector<float> res(batch.size());
     for (int i = 0; i < batch.size(); i++) {
         auto d = L2Sqr(query.data(), batch[i].data(), dim);
-        res.push_back(d);
+        res[i] = d;
     }
     return res;
 }
