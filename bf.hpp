@@ -144,17 +144,32 @@ class KNNSearch {
 
         void search_l2_vanilla_perf(matf32_t queries, int32_t top_k) {
           for (int i = 0; i < queries.size(); i++) {
-              int32_t idx = 0;
-              while (idx < _dataset.size()) {
-                int32_t curr_batch_size = std::min(
-                    _batch_size, (int32_t)_dataset.size() - idx);
-                std::vector<std::vector<float>> curr_batch(
-                    _dataset.begin() + idx, _dataset.begin() + idx + curr_batch_size);
-                avs::vecf32_t distances = avs::l2_distance_vanilla(
-                    queries[i], curr_batch, engine, stream);
-                idx += curr_batch_size;
-              }
+            int32_t idx = 0;
+            while (idx < _dataset.size()) {
+              int32_t curr_batch_size = std::min(
+                  _batch_size, (int32_t)_dataset.size() - idx);
+              std::vector<std::vector<float>> curr_batch(
+                  _dataset.begin() + idx, _dataset.begin() + idx + curr_batch_size);
+              avs::vecf32_t distances = avs::l2_distance_vanilla(
+                  queries[i], curr_batch, engine, stream);
+              idx += curr_batch_size;
             }
+          }
+        }
+
+        void search_ip_vanilla_perf(matf32_t queries, int32_t top_k) {
+          for (int i = 0; i < queries.size(); i++) {
+            int32_t idx = 0;
+            while (idx < _dataset.size()) {
+              int32_t curr_batch_size = std::min(
+                  _batch_size, (int32_t)_dataset.size() - idx);
+              std::vector<std::vector<float>> curr_batch(
+                  _dataset.begin() + idx, _dataset.begin() + idx + curr_batch_size);
+              avs::vecf32_t distances = avs::ip_distance_vanilla(
+                  queries[i], curr_batch, engine, stream);
+              idx += curr_batch_size;
+            }
+          }
         }
 };
 

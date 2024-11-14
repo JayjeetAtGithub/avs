@@ -182,7 +182,7 @@ std::vector<std::vector<float>> amx_inner_product(
     return res;
 }
 
-[[nodiscard]] static std::vector<std::vector<float>> ip_distance(
+static std::vector<std::vector<float>> ip_distance(
     avs::matf32_t &queries, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
 
     const int32_t n = queries.size();
@@ -211,7 +211,7 @@ std::vector<std::vector<float>> amx_inner_product(
 }
 
 
-[[nodiscard]] static std::vector<float> l2_distance_amx(
+static std::vector<float> l2_distance_amx(
     const avs::vecf32_t &query, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
     const int64_t batch_size = batch.size();
     const int64_t dim = batch[0].size();
@@ -253,16 +253,41 @@ static float L2Sqr(const void *vec1, const void *vec2, const int32_t dim) {
     return (res);
 }
 
-[[nodiscard]] static std::vector<float> l2_distance_vanilla(
-    const avs::vecf32_t &query, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
-    const int64_t dim = batch[0].size();
+static float
+InnerProduct(const void *vec1, const void *vec2, const int32_t dim) {
+    float *v1 = (float *) vec1;
+    float *v2 = (float *) vec2;
 
-    std::vector<float> res(batch.size());
-    for (int i = 0; i < batch.size(); i++) {
-        auto d = L2Sqr(query.data(), batch[i].data(), dim);
-        res[i] = d;
+    float res = 0;
+    for (size_t i = 0; i < dim; i++) {
+        res += ((float *) v1)[i] * ((float *) v2)[i];
     }
     return res;
+}
+
+
+static std::vector<float> l2_distance_vanilla(
+  const avs::vecf32_t &query, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
+  const int64_t dim = batch[0].size();
+
+  std::vector<float> res(batch.size());
+  for (int i = 0; i < batch.size(); i++) {
+      auto d = L2Sqr(query.data(), batch[i].data(), dim);
+      res[i] = d;
+  }
+  return res;
+}
+
+static std::vector<float> ip_distance_vanilla(
+  const avs::vecf32_t &query, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
+  const int64_t dim = batch[0].size();
+
+  std::vector<float> res(batch.size());
+  for (int i = 0; i < batch.size(); i++) {
+      auto d = InnerProduct(query.data(), batch[i].data(), dim);
+      res[i] = d;
+  }
+  return res;
 }
 
 } // namespace avs
