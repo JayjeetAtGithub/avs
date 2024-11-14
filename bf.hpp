@@ -45,6 +45,7 @@ class KNNSearch {
                 result.push_back(pq.top());
                 pq.pop();
             }
+            while (!pq.empty()) pq.pop();
             return result;
         }
 
