@@ -6,6 +6,8 @@ only brute force searches. Please follow the instructions below to use and contr
 
 ## Building from source
 
+**Note:** An Intel processor from the Sapphire Rapids lineup is required for this project.
+
 1. Install the oneDNN library.
 
 ```bash
@@ -17,7 +19,14 @@ cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release ..
 sudo make -j$(nproc) install
 ```
 
-2. Build this project.
+2. Build the project.
 ```bash
 ./build.sh
+```
+
+3. Run the example with verbose logging.
+```bash
+export LD_LIBRARY_PATH=/usr/local/lib
+export ONEDNN_VERBOSE=1
+./avs_example -d 16 -k 10 -b 2048 --nd 8192 --nq 4096
 ```
