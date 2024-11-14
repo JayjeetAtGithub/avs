@@ -74,7 +74,9 @@ class KNNSearch {
         }
 
         avs::matf32_t search_l2_amx(matf32_t queries, int32_t top_k) {
-            std::vector<std::vector<float>> results;
+            std::vector<std::vector<float>> results(
+                queries.size(), std::vector<float>(top_k, 0.0f)
+            );
             for (int i = 0; i < queries.size(); i++) {
                 std::priority_queue<float, std::vector<float>, std::greater<float>> pq;
                 int32_t idx = 0;
@@ -100,7 +102,9 @@ class KNNSearch {
         }
 
         avs::matf32_t search_l2_vanilla(matf32_t queries, int32_t top_k) {
-            std::vector<std::vector<float>> results;
+            std::vector<std::vector<float>> results(
+                queries.size(), std::vector<float>(top_k, 0.0f)
+            );
             for (int i = 0; i < queries.size(); i++) {
                 std::priority_queue<float, std::vector<float>, std::greater<float>> pq;
                 int32_t idx = 0;
