@@ -74,7 +74,8 @@ class KNNSearch {
                     idx += curr_batch_size;
                 }
                 std::vector<float> q_res;
-                while(top_k--) {
+                int32_t k = top_k;
+                while(k--) {
                     q_res.push_back(pq.top());
                     pq.pop();
                 }
@@ -101,7 +102,8 @@ class KNNSearch {
                     idx += curr_batch_size;
                 }
                 std::vector<float> q_res;
-                while(top_k--) {
+                int32_t k = top_k;
+                while(k--) {
                     q_res.push_back(pq.top());
                     pq.pop();
                 }
