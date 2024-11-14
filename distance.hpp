@@ -182,7 +182,7 @@ std::vector<std::vector<float>> amx_inner_product(
     return res;
 }
 
-static std::vector<std::vector<float>> ip_distance(
+static std::vector<std::vector<float>> ip_distance_amx(
     avs::matf32_t &queries, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
 
     const int32_t n = queries.size();
