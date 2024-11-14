@@ -79,6 +79,20 @@ class KNNSearch {
                 idx += curr_batch_size;
             }
         }
+
+        void search_l2_vanilla(vecf32_t query) {
+            int32_t idx = 0;
+            while (idx < _dataset.size()) {
+                int32_t curr_batch_size = std::min(
+                    _batch_size, (int32_t)_dataset.size() - idx);
+                std::vector<std::vector<float>> curr_batch(
+                    _dataset.begin() + idx, _dataset.begin() + idx + curr_batch_size);
+                avs::vecf32_t distances = avs::l2_distance_vanilla(
+                    query, curr_batch, engine, stream);
+                for (auto const &d : distances) pq.push(d);
+                idx += curr_batch_size;
+            }
+        }
 };
 
 } // namespace avs

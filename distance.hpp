@@ -239,4 +239,30 @@ std::vector<std::vector<float>> amx_inner_product(
     return amx_matmul(batch_size, dim, dis_1d, dis_1d_t, engine, stream);
 }
 
+static float L2Sqr(const void *vec1, const void *vec2, const int32_t dim) {
+    float *v1 = (float *) vec1;
+    float *v2 = (float *) vec2;
+
+    float res = 0;
+    for (size_t i = 0; i < dim; i++) {
+        float t = *v1 - *v2;
+        v1++;
+        v2++;
+        res += t * t;
+    }
+    return (res);
+}
+
+[[nodiscard]] static std::vector<float> l2_distance_vanilla(
+    avs::vecf32_t &query, avs::matf32_t &batch, dnnl::engine &engine, dnnl::stream &stream) {
+    const int64_t dim = batch[0].size();
+
+    std::vector<float> res;
+    for (int i = 0; i < batch.size(); i++) {
+        auto d = L2Sqr(query.data(), batch[i].data(), dim);
+        res.push_back(d);
+    }
+    return res;
+}
+
 } // namespace avs

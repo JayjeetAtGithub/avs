@@ -58,11 +58,22 @@ int main(int argc, char **argv) {
     std::cout << "Dimension of query vectors: " << queries[0].size() << std::endl;
 
     auto s = std::chrono::high_resolution_clock::now();
-    knn_index->search_ip(queries);
+    knn_index->search_l2_vanilla(queries[0]);
     auto e = std::chrono::high_resolution_clock::now();
-
     auto dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
-    std::cout << "Duration: " << dur_ms << std::endl;
+    std::cout << "Duration (L2 vanilla): " << dur_ms << std::endl;
+
+    s = std::chrono::high_resolution_clock::now();
+    knn_index->search_l2(queries[0]);
+    e = std::chrono::high_resolution_clock::now();
+    dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
+    std::cout << "Duration (L2 AMX): " << dur_ms << std::endl;
+
+    s = std::chrono::high_resolution_clock::now();
+    knn_index->search_ip(queries);
+    e = std::chrono::high_resolution_clock::now();
+    dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
+    std::cout << "Duration (IP AMX): " << dur_ms << std::endl;
 
     auto result = knn_index->top_k(top_k);
     for (auto const &v : result) {
