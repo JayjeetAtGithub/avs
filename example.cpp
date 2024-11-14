@@ -7,7 +7,8 @@
 
 
 void print_matrix(std::vector<std::vector<float>> &mat) {
-    for (int i = 0; i < std::min(mat.size(), 10); i++) {
+    int32_t limit = 10;
+    for (int i = 0; i < std::min(mat.size(), limit); i++) {
         for (int j = 0; j < mat[0].size(); j++) {
             std::cout << mat[i][j] << " ";
         }
