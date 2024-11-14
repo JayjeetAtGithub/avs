@@ -76,13 +76,6 @@ int main(int argc, char **argv) {
     print_matrix(result);
 
     s = std::chrono::high_resolution_clock::now();
-    result = knn_index->search_l2_amx(queries, top_k);
-    e = std::chrono::high_resolution_clock::now();
-    dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
-    std::cout << "Duration (L2 AMX): " << dur_ms << std::endl;
-    print_matrix(result);
-
-    s = std::chrono::high_resolution_clock::now();
     result = knn_index->search_ip(queries, top_k);
     e = std::chrono::high_resolution_clock::now();
     dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
