@@ -29,26 +29,26 @@ static bool is_amxbf16_supported() {
 
 static void read_from_dnnl_memory(void *handle, dnnl::memory &mem) {
   dnnl::engine eng = mem.get_engine();
-  size_t size = mem.get_desc().get_size();
+  int32_t size = mem.get_desc().get_size();
   if (!handle)
     throw std::runtime_error("handle is nullptr.");
   uint8_t *src = static_cast<uint8_t *>(mem.get_data_handle());
   if (!src)
     throw std::runtime_error("get_data_handle returned nullptr.");
-  for (size_t i = 0; i < size; ++i) {
+  for (int32_t i = 0; i < size; ++i) {
     ((uint8_t *)handle)[i] = src[i];
   }
 }
 
 static void write_to_dnnl_memory(void const *handle, dnnl::memory &mem) {
   dnnl::engine eng = mem.get_engine();
-  size_t size = mem.get_desc().get_size();
+  int32_t size = mem.get_desc().get_size();
   if (!handle)
     throw std::runtime_error("handle is nullptr.");
   uint8_t *dst = static_cast<uint8_t *>(mem.get_data_handle());
   if (!dst)
     throw std::runtime_error("get_data_handle returned nullptr.");
-  for (size_t i = 0; i < size; ++i) {
+  for (int32_t i = 0; i < size; ++i) {
     dst[i] = ((uint8_t *)handle)[i];
   }
 }
@@ -221,7 +221,7 @@ static float L2Sqr(void const *vec1, void const *vec2, int32_t const &dim) {
   float *v1 = (float *)vec1;
   float *v2 = (float *)vec2;
   float res = 0;
-  for (size_t i = 0; i < dim; i++) {
+  for (int32_t i = 0; i < dim; i++) {
     float t = *v1 - *v2;
     v1++;
     v2++;
@@ -235,7 +235,7 @@ static float InnerProduct(void const *vec1, void const *vec2,
   float *v1 = (float *)vec1;
   float *v2 = (float *)vec2;
   float res = 0;
-  for (size_t i = 0; i < dim; i++) {
+  for (int32_t i = 0; i < dim; i++) {
     res += ((float *)v1)[i] * ((float *)v2)[i];
   }
   return res;
