@@ -245,7 +245,7 @@ inline void read_from_dnnl_memory(void *handle, dnnl::memory &mem) {
 }
 
 // Read from handle, write to memory
-inline void write_to_dnnl_memory(void *handle, dnnl::memory &mem) {
+inline void write_to_dnnl_memory(void const *handle, dnnl::memory &mem) {
     dnnl::engine eng = mem.get_engine();
     size_t size = mem.get_desc().get_size();
 
