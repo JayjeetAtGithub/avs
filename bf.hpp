@@ -38,7 +38,7 @@ class KNNSearch {
             return std::make_pair(_dataset.size(), _dataset[0].size());
         }
 
-        // Intel AMX versios
+        // Intel AMX versions
         avs::matf32_t search_ip_amx(matf32_t queries, int32_t top_k) {
             std::vector<std::vector<float>> results(
                 queries.size(), std::vector<float>(top_k, 0.0f)
