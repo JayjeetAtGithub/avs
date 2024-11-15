@@ -76,7 +76,7 @@ static avs::matf32_t avx512_subtract_batch(avs::vecf32_t const &query,
   return result;
 }
 
-static avs::vecf32_t amx_matmul(const int64_t &r, const int64_t &c,
+static avs::vecf32_t amx_matmul(const int32_t &r, const int32_t &c,
                                 avs::vecf32_t const &m, avs::vecf32_t const &mt,
                                 dnnl::engine &engine, dnnl::stream &stream) {
   avs::vecf32_t dst(r * r, 0.0f);
@@ -193,8 +193,8 @@ static avs::vecf32_t l2_distance_amx(avs::vecf32_t const &query,
                                      avs::matf32_t const &batch,
                                      dnnl::engine &engine,
                                      dnnl::stream &stream) {
-  int64_t const batch_size = batch.size();
-  int64_t const dim = batch[0].size();
+  int32_t const batch_size = batch.size();
+  int32_t const dim = batch[0].size();
   avs::matf32_t dis_2d = avx512_subtract_batch(query, batch);
   avs::matf32_t dis_2d_t(dis_2d[0].size(), avs::vecf32_t(dis_2d.size(), 0.0f));
   for (int i = 0; i < dis_2d_t.size(); i++) {
@@ -245,7 +245,7 @@ static avs::vecf32_t l2_distance_vanilla(avs::vecf32_t const &query,
                                          avs::matf32_t const &batch,
                                          dnnl::engine &engine,
                                          dnnl::stream &stream) {
-  int64_t const dim = batch[0].size();
+  int32_t const dim = batch[0].size();
   avs::vecf32_t res(batch.size());
   for (int i = 0; i < batch.size(); i++) {
     auto d = L2Sqr(query.data(), batch[i].data(), dim);
@@ -258,7 +258,7 @@ static avs::vecf32_t ip_distance_vanilla(avs::vecf32_t const &query,
                                          avs::matf32_t const &batch,
                                          dnnl::engine &engine,
                                          dnnl::stream &stream) {
-  int64_t const dim = batch[0].size();
+  int32_t const dim = batch[0].size();
   avs::vecf32_t res(batch.size());
   for (int i = 0; i < batch.size(); i++) {
     auto d = InnerProduct(query.data(), batch[i].data(), dim);
