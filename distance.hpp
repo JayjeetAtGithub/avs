@@ -1,6 +1,5 @@
 #include <immintrin.h>
 
-#include <mutex>
 #include <unordered_map>
 
 #include "utils.hpp"
@@ -16,6 +15,8 @@
 
 namespace avs {
 
+using vecf32_t = std::vector<float>;
+using matf32_t = std::vector<std::vector<float>>;
 using tag = dnnl::memory::format_tag;
 using dt = dnnl::memory::data_type;
 
@@ -40,7 +41,7 @@ avs::matf32_t avx512_subtract_batch(
     avs::vecf32_t const &query, avs::matf32_t const &data) {
     int32_t const N = data.size();
     int32_t const dim = data[0].size();
-    std::vector<std::vector<float>> result(N, std::vector<float>(dim, 0.0f));
+    avs::matf32_t result(N, avs::vecf32_t(dim, 0.0f));
     for (int i = 0; i < N; i++) {
         float PORTABLE_ALIGN64 tmp[dim];
         avx512_subtract(query.data(), data[i].data(), tmp);
@@ -53,9 +54,9 @@ avs::matf32_t avx512_subtract_batch(
 
 avs::vecf32_t amx_matmul(
     const int64_t &r, const int64_t &c,
-    std::vector<float> const &m, std::vector<float> const &mt,
+    avs::vecf32_t const &m, avs::vecf32_t const &mt,
     dnnl::engine &engine, dnnl::stream &stream) {
-    std::vector<float> dst(r * r, 0.0f);
+    avs::vecf32_t dst(r * r, 0.0f);
 
     dnnl::memory::dims a_dims = {r, c};
     dnnl::memory::dims b_dims = {c, r};
@@ -89,7 +90,7 @@ avs::vecf32_t amx_matmul(
     stream.wait();
 
     read_from_dnnl_memory(dst.data(), c_mem);
-    std::vector<float> res(r, 0.0f);
+    avs::vecf32_t res(r, 0.0f);
     for (int i = 0; i < r; i++) {
         res[i] = dst[i * r + i];
     }
@@ -98,7 +99,7 @@ avs::vecf32_t amx_matmul(
 
 static matf32_t amx_inner_product(
     int32_t const &n, int32_t const &oc, int32_t const &ic,
-    std::vector<float> const &s, std::vector<float> const &w,
+    avs::vecf32_t const &s, avs::vecf32_t const &w,
     dnnl::engine &engine, dnnl::stream &stream) {
 
     dnnl::memory::dims s_dims = {n, ic};
@@ -137,9 +138,9 @@ static matf32_t amx_inner_product(
     prim.execute(stream, args);
     stream.wait();
 
-    std::vector<float> dst(n * oc, 0.0f);
+    avs::vecf32_t dst(n * oc, 0.0f);
     read_from_dnnl_memory(dst.data(), dst_mem);
-    std::vector<std::vector<float>> res(n, std::vector<float>(oc, 0.0f));
+    avs::matf32_t res(n, avs::vecf32_t(oc, 0.0f));
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < oc; j++) {
             res[i][j] = dst[i * oc + j];
@@ -154,10 +155,8 @@ static avs::matf32_t ip_distance_amx(
     const int32_t n = queries.size();
     const int32_t oc = batch.size();
     const int32_t ic = queries[0].size();
-
-    std::vector<float> queries_1d(n * ic);
-    std::vector<float> batch_1d(oc * ic);
-
+    avs::vecf32_t queries_1d(n * ic);
+    avs::vecf32_t batch_1d(oc * ic);
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < ic; j++) {
             queries_1d[i * ic + j] = queries[i][j];
@@ -168,7 +167,6 @@ static avs::matf32_t ip_distance_amx(
             batch_1d[i * ic + j] = batch[i][j];
         }
     }
-
     return amx_inner_product(
         n, oc, ic,
         queries_1d, batch_1d, 
@@ -181,21 +179,21 @@ static avs::vecf32_t l2_distance_amx(
     dnnl::engine &engine, dnnl::stream &stream) {
     const int64_t batch_size = batch.size();
     const int64_t dim = batch[0].size();
-    std::vector<std::vector<float>> dis_2d = avx512_subtract_batch(query, batch);
-    std::vector<std::vector<float>> dis_2d_t(
-        dis_2d[0].size(), std::vector<float>(dis_2d.size(), 0.0f));
+    avs::matf32_t dis_2d = avx512_subtract_batch(query, batch);
+    avs::matf32_t dis_2d_t(
+        dis_2d[0].size(), avs::vecf32_t(dis_2d.size(), 0.0f));
     for (int i = 0; i < dis_2d_t.size(); i++) {
         for (int j = 0; j < dis_2d_t[0].size(); j++) {
             dis_2d_t[i][j] = dis_2d[j][i];
         }
     }
-    std::vector<float> dis_1d(batch_size * dim);
+    avs::vecf32_t dis_1d(batch_size * dim);
     for (int i = 0; i < batch_size; i++) {
         for (int j = 0; j < dim; j++) {
             dis_1d[i * dim + j] = dis_2d[i][j];
         }
     }
-    std::vector<float> dis_1d_t(batch_size * dim);
+    avs::vecf32_t dis_1d_t(batch_size * dim);
     for (int i = 0; i < dim; i++) {
         for (int j = 0; j < batch_size; j++) {
             dis_1d_t[i * batch_size + j] = dis_2d_t[i][j];
@@ -235,7 +233,7 @@ static avs::vecf32_t l2_distance_vanilla(
 avs::vecf32_t const &query, avs::matf32_t const &batch, 
   dnnl::engine &engine, dnnl::stream &stream) {
     int64_t const dim = batch[0].size();
-    std::vector<float> res(batch.size());
+    avs::vecf32_t res(batch.size());
     for (int i = 0; i < batch.size(); i++) {
         auto d = L2Sqr(query.data(), batch[i].data(), dim);
         res[i] = d;
@@ -247,7 +245,7 @@ static avs::vecf32_t ip_distance_vanilla(
     avs::vecf32_t const &query, avs::matf32_t const &batch, 
     dnnl::engine &engine, dnnl::stream &stream) {
     int64_t const dim = batch[0].size();
-    std::vector<float> res(batch.size());
+    avs::vecf32_t res(batch.size());
     for (int i = 0; i < batch.size(); i++) {
         auto d = InnerProduct(query.data(), batch[i].data(), dim);
         res[i] = d;

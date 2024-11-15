@@ -1,7 +1,6 @@
 #include <vector>
 #include <queue>
 
-#include "types.hpp"
 #include "distance.hpp"
 
 namespace avs {
@@ -13,11 +12,9 @@ class KNNSearch {
 
     dnnl::engine engine;
     dnnl::stream stream;
-    std::mutex mtx;
 
     public:
         void init_onednn() {
-            std::unique_lock<std::mutex> lock(mtx);
             engine = dnnl::engine(dnnl::engine::kind::cpu, 0);
             stream = dnnl::stream(engine);
         }
