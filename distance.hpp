@@ -3,7 +3,6 @@
 #include <unordered_map>
 
 #include "oneapi/dnnl/dnnl.hpp"
-#include "utils.hpp"
 
 #if defined(__GNUC__)
 #define PORTABLE_ALIGN32 __attribute__((aligned(32)))
@@ -20,12 +19,38 @@ using matf32_t = std::vector<std::vector<float>>;
 using tag = dnnl::memory::format_tag;
 using dt = dnnl::memory::data_type;
 
-inline static bool is_amxbf16_supported() {
+static bool is_amxbf16_supported() {
   unsigned int eax, ebx, ecx, edx;
   __asm__ __volatile__("cpuid"
                        : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
                        : "a"(7), "c"(0));
   return edx & (1 << 22);
+}
+
+static void read_from_dnnl_memory(void *handle, dnnl::memory &mem) {
+  dnnl::engine eng = mem.get_engine();
+  size_t size = mem.get_desc().get_size();
+  if (!handle)
+    throw std::runtime_error("handle is nullptr.");
+  uint8_t *src = static_cast<uint8_t *>(mem.get_data_handle());
+  if (!src)
+    throw std::runtime_error("get_data_handle returned nullptr.");
+  for (size_t i = 0; i < size; ++i) {
+    ((uint8_t *)handle)[i] = src[i];
+  }
+}
+
+static void write_to_dnnl_memory(void const *handle, dnnl::memory &mem) {
+  dnnl::engine eng = mem.get_engine();
+  size_t size = mem.get_desc().get_size();
+  if (!handle)
+    throw std::runtime_error("handle is nullptr.");
+  uint8_t *dst = static_cast<uint8_t *>(mem.get_data_handle());
+  if (!dst)
+    throw std::runtime_error("get_data_handle returned nullptr.");
+  for (size_t i = 0; i < size; ++i) {
+    dst[i] = ((uint8_t *)handle)[i];
+  }
 }
 
 void avx512_subtract(float const *a, float const *b, float *c) {
@@ -36,8 +61,8 @@ void avx512_subtract(float const *a, float const *b, float *c) {
   _mm512_store_ps(c, diff);
 }
 
-avs::matf32_t avx512_subtract_batch(avs::vecf32_t const &query,
-                                    avs::matf32_t const &data) {
+static avs::matf32_t avx512_subtract_batch(avs::vecf32_t const &query,
+                                           avs::matf32_t const &data) {
   int32_t const N = data.size();
   int32_t const dim = data[0].size();
   avs::matf32_t result(N, avs::vecf32_t(dim, 0.0f));
@@ -51,16 +76,15 @@ avs::matf32_t avx512_subtract_batch(avs::vecf32_t const &query,
   return result;
 }
 
-avs::vecf32_t amx_matmul(const int64_t &r, const int64_t &c,
-                         avs::vecf32_t const &m, avs::vecf32_t const &mt,
-                         dnnl::engine &engine, dnnl::stream &stream) {
+static avs::vecf32_t amx_matmul(const int64_t &r, const int64_t &c,
+                                avs::vecf32_t const &m, avs::vecf32_t const &mt,
+                                dnnl::engine &engine, dnnl::stream &stream) {
   avs::vecf32_t dst(r * r, 0.0f);
 
   dnnl::memory::dims a_dims = {r, c};
   dnnl::memory::dims b_dims = {c, r};
   dnnl::memory::dims c_dims = {r, r};
 
-  // Declare fp32 input memory descriptors
   auto a_in_md = dnnl::memory::desc(a_dims, dt::f32, tag::ab);
   auto b_in_md = dnnl::memory::desc(b_dims, dt::f32, tag::ab);
   auto c_out_md = dnnl::memory::desc(c_dims, dt::f32, tag::ab);
@@ -147,9 +171,9 @@ static avs::matf32_t ip_distance_amx(avs::matf32_t const &queries,
                                      avs::matf32_t const &batch,
                                      dnnl::engine &engine,
                                      dnnl::stream &stream) {
-  const int32_t n = queries.size();
-  const int32_t oc = batch.size();
-  const int32_t ic = queries[0].size();
+  int32_t const n = queries.size();
+  int32_t const oc = batch.size();
+  int32_t const ic = queries[0].size();
   avs::vecf32_t queries_1d(n * ic);
   avs::vecf32_t batch_1d(oc * ic);
   for (int i = 0; i < n; i++) {
@@ -169,8 +193,8 @@ static avs::vecf32_t l2_distance_amx(avs::vecf32_t const &query,
                                      avs::matf32_t const &batch,
                                      dnnl::engine &engine,
                                      dnnl::stream &stream) {
-  const int64_t batch_size = batch.size();
-  const int64_t dim = batch[0].size();
+  int64_t const batch_size = batch.size();
+  int64_t const dim = batch[0].size();
   avs::matf32_t dis_2d = avx512_subtract_batch(query, batch);
   avs::matf32_t dis_2d_t(dis_2d[0].size(), avs::vecf32_t(dis_2d.size(), 0.0f));
   for (int i = 0; i < dis_2d_t.size(); i++) {
@@ -196,7 +220,6 @@ static avs::vecf32_t l2_distance_amx(avs::vecf32_t const &query,
 static float L2Sqr(void const *vec1, void const *vec2, int32_t const &dim) {
   float *v1 = (float *)vec1;
   float *v2 = (float *)vec2;
-
   float res = 0;
   for (size_t i = 0; i < dim; i++) {
     float t = *v1 - *v2;
@@ -211,7 +234,6 @@ static float InnerProduct(void const *vec1, void const *vec2,
                           int32_t const &dim) {
   float *v1 = (float *)vec1;
   float *v2 = (float *)vec2;
-
   float res = 0;
   for (size_t i = 0; i < dim; i++) {
     res += ((float *)v1)[i] * ((float *)v2)[i];
