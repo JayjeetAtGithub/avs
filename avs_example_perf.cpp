@@ -76,10 +76,22 @@ int main(int argc, char **argv) {
     std::cout << "Duration (L2 vanilla): " << dur_ms << std::endl;
 
     s = std::chrono::high_resolution_clock::now();
+    knn_index->search_l2_avx512_perf(queries, top_k);
+    e = std::chrono::high_resolution_clock::now();
+    dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
+    std::cout << "Duration (L2 AVX512): " << dur_ms << std::endl;
+
+    s = std::chrono::high_resolution_clock::now();
     knn_index->search_ip_vanilla_perf(queries, top_k);
     e = std::chrono::high_resolution_clock::now();
     dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
     std::cout << "Duration (IP vanilla): " << dur_ms << std::endl;
+
+    s = std::chrono::high_resolution_clock::now();
+    knn_index->search_ip_avx512_perf(queries, top_k);
+    e = std::chrono::high_resolution_clock::now();
+    dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
+    std::cout << "Duration (IP AVX512): " << dur_ms << std::endl;
 
     s = std::chrono::high_resolution_clock::now();
     knn_index->search_ip_amx_perf(queries, top_k);

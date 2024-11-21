@@ -230,6 +230,36 @@ static float L2Sqr(void const *vec1, void const *vec2, int32_t const &dim) {
   return (result);
 }
 
+static float
+L2SqrAVX512(const void *vec1, const void *vec2, int32_t const &dim) {
+    float *pVect1 = (float *) vec1;
+    float *pVect2 = (float *) vec2;
+    float PORTABLE_ALIGN64 TmpRes[16];
+    size_t qty16 = dim >> 4;
+
+    const float *pEnd1 = pVect1 + (qty16 << 4);
+
+    __m512 diff, v1, v2;
+    __m512 sum = _mm512_set1_ps(0);
+
+    while (pVect1 < pEnd1) {
+        v1 = _mm512_loadu_ps(pVect1);
+        pVect1 += 16;
+        v2 = _mm512_loadu_ps(pVect2);
+        pVect2 += 16;
+        diff = _mm512_sub_ps(v1, v2);
+        // sum = _mm512_fmadd_ps(diff, diff, sum);
+        sum = _mm512_add_ps(sum, _mm512_mul_ps(diff, diff));
+    }
+
+    _mm512_store_ps(TmpRes, sum);
+    float res = TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + TmpRes[4] + TmpRes[5] + TmpRes[6] +
+            TmpRes[7] + TmpRes[8] + TmpRes[9] + TmpRes[10] + TmpRes[11] + TmpRes[12] +
+            TmpRes[13] + TmpRes[14] + TmpRes[15];
+
+    return (res);
+}
+
 static float InnerProduct(void const *vec1, void const *vec2,
                           int32_t const &dim) {
   float *v1 = (float *)vec1;
@@ -240,6 +270,61 @@ static float InnerProduct(void const *vec1, void const *vec2,
   }
   return result;
 }
+
+
+static float
+InnerProductAVX512(const void *vec1, const void *vec2, int32_t const &dim) {
+    float PORTABLE_ALIGN64 TmpRes[16];
+    float *pVect1 = (float *) vec1;
+    float *pVect2 = (float *) vec2;
+
+    size_t qty16 = dim / 16;
+
+    const float *pEnd1 = pVect1 + 16 * qty16;
+
+    __m512 sum512 = _mm512_set1_ps(0);
+
+    size_t loop = qty16 / 4;
+    
+    while (loop--) {
+        __m512 v1 = _mm512_loadu_ps(pVect1);
+        __m512 v2 = _mm512_loadu_ps(pVect2);
+        pVect1 += 16;
+        pVect2 += 16;
+
+        __m512 v3 = _mm512_loadu_ps(pVect1);
+        __m512 v4 = _mm512_loadu_ps(pVect2);
+        pVect1 += 16;
+        pVect2 += 16;
+
+        __m512 v5 = _mm512_loadu_ps(pVect1);
+        __m512 v6 = _mm512_loadu_ps(pVect2);
+        pVect1 += 16;
+        pVect2 += 16;
+
+        __m512 v7 = _mm512_loadu_ps(pVect1);
+        __m512 v8 = _mm512_loadu_ps(pVect2);
+        pVect1 += 16;
+        pVect2 += 16;
+
+        sum512 = _mm512_fmadd_ps(v1, v2, sum512);
+        sum512 = _mm512_fmadd_ps(v3, v4, sum512);
+        sum512 = _mm512_fmadd_ps(v5, v6, sum512);
+        sum512 = _mm512_fmadd_ps(v7, v8, sum512);
+    }
+
+    while (pVect1 < pEnd1) {
+        __m512 v1 = _mm512_loadu_ps(pVect1);
+        __m512 v2 = _mm512_loadu_ps(pVect2);
+        pVect1 += 16;
+        pVect2 += 16;
+        sum512 = _mm512_fmadd_ps(v1, v2, sum512);
+    }
+
+    float sum = _mm512_reduce_add_ps(sum512);
+    return sum;
+}
+
 
 static avs::vecf32_t l2_distance_vanilla(avs::vecf32_t const &query,
                                          avs::matf32_t const &batch,
@@ -254,6 +339,19 @@ static avs::vecf32_t l2_distance_vanilla(avs::vecf32_t const &query,
   return result;
 }
 
+static avs::vecf32_t l2_distance_avx512(avs::vecf32_t const &query,
+                                        avs::matf32_t const &batch,
+                                        dnnl::engine &engine,
+                                        dnnl::stream &stream) {
+  int32_t const dim = batch[0].size();
+  avs::vecf32_t result(batch.size());
+  for (int32_t i = 0; i < batch.size(); i++) {
+    auto d = L2SqrAVX512(query.data(), batch[i].data(), dim);
+    result[i] = d;
+  }
+  return result;
+}
+
 static avs::vecf32_t ip_distance_vanilla(avs::vecf32_t const &query,
                                          avs::matf32_t const &batch,
                                          dnnl::engine &engine,
@@ -262,6 +360,19 @@ static avs::vecf32_t ip_distance_vanilla(avs::vecf32_t const &query,
   avs::vecf32_t result(batch.size());
   for (int32_t i = 0; i < batch.size(); i++) {
     auto d = InnerProduct(query.data(), batch[i].data(), dim);
+    result[i] = d;
+  }
+  return result;
+}
+
+static avs::vecf32_t ip_distance_avx512(avs::vecf32_t const &query,
+                                        avs::matf32_t const &batch,
+                                        dnnl::engine &engine,
+                                        dnnl::stream &stream) {
+  int32_t const dim = batch[0].size();
+  avs::vecf32_t result(batch.size());
+  for (int32_t i = 0; i < batch.size(); i++) {
+    auto d = InnerProductAVX512(query.data(), batch[i].data(), dim);
     result[i] = d;
   }
   return result;
