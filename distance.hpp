@@ -53,12 +53,14 @@ static void write_to_dnnl_memory(void const *handle, dnnl::memory &mem) {
   }
 }
 
-void avx512_subtract(float const *a, float const *b, float *c) {
-  __m512 diff, v1, v2;
-  v1 = _mm512_loadu_ps(a);
-  v2 = _mm512_loadu_ps(b);
-  diff = _mm512_sub_ps(v1, v2);
-  _mm512_store_ps(c, diff);
+void avx512_substract(float const *a, float const *b, float *result, int32_t const &N) {
+    size_t i;
+    for (i = 0; i < N; i += 16) {
+        __m512 vec_a = _mm512_loadu_ps(&a[i]);
+        __m512 vec_b = _mm512_loadu_ps(&b[i]);
+        __m512 vec_result = _mm512_sub_ps(vec_a, vec_b);
+        _mm512_storeu_ps(&result[i], vec_result);
+    }
 }
 
 static avs::matf32_t avx512_subtract_batch(avs::vecf32_t const &query,
@@ -68,7 +70,7 @@ static avs::matf32_t avx512_subtract_batch(avs::vecf32_t const &query,
   avs::matf32_t result(N, avs::vecf32_t(dim, 0.0f));
   for (int32_t i = 0; i < N; i++) {
     float PORTABLE_ALIGN64 tmp[dim];
-    avx512_subtract(query.data(), data[i].data(), tmp);
+    avx512_substract(query.data(), data[i].data(), tmp, query.size());
     for (int32_t k = 0; k < dim; k++) {
       result[i][k] = tmp[k];
     }
