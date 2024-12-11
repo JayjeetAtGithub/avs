@@ -2,7 +2,7 @@
 #include <vector>
 #include <random>
 
-#include "bf.hpp"
+#include "ivf.hpp"
 #include "CLI11.hpp"
 
 
@@ -43,43 +43,64 @@ int main(int argc, char **argv) {
     rng.seed(47);
     std::uniform_real_distribution<float> distrib;
 
-    auto knn_index = new avs::KNNSearch(dim, batch_size);
+
+    auto ivf_index = new avs::IVFFlat(10, 2, avs::metric::IP);
+
+    std::vector<float> data(dim * num_vectors);
+    std::vector<float> queries(dim * num_queries);
 
     for (int i = 0; i < num_vectors; i++) {
-        std::vector<float> batch;
         for (int j = 0; j < dim; j++) {
-            batch.push_back(distrib(rng));
+            data[i * dim + j] = distrib(rng);
         }
-        knn_index->add(batch);
     }
 
-    auto shape = knn_index->shape();
-    std::cout << "No. of vectors: " << shape.first << std::endl;
-    std::cout << "Dimension of dataset vectors: " << shape.second << std::endl;
-
-    std::vector<std::vector<float>> queries;
     for (int i = 0; i < num_queries; i++) {
-        std::vector<float> query;
         for (int j = 0; j < dim; j++) {
-            query.push_back(distrib(rng));
+            queries[i * dim + j] = distrib(rng);
         }
-        queries.push_back(query);
     }
 
-    std::cout << "No. of query vectors: " << queries.size() << std::endl;
-    std::cout << "Dimension of query vectors: " << queries[0].size() << std::endl;
+    ivf_index->train(data.data(), num_vectors, dim);
+    ivf_index->print_inverted_list();
 
-    auto s = std::chrono::high_resolution_clock::now();
-    auto result = knn_index->search_l2_vanilla(queries, top_k);
-    auto e = std::chrono::high_resolution_clock::now();
-    auto dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
-    std::cout << "Duration (L2 vanilla): " << dur_ms << std::endl;
-    print_matrix(result);
+    // auto knn_index = new avs::KNNSearch(dim, batch_size);
 
-    s = std::chrono::high_resolution_clock::now();
-    result = knn_index->search_ip_amx(queries, top_k);
-    e = std::chrono::high_resolution_clock::now();
-    dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
-    std::cout << "Duration (IP AMX): " << dur_ms << std::endl;
-    print_matrix(result);
+    // for (int i = 0; i < num_vectors; i++) {
+    //     std::vector<float> batch;
+    //     for (int j = 0; j < dim; j++) {
+    //         batch.push_back(distrib(rng));
+    //     }
+    //     knn_index->add(batch);
+    // }
+
+    // auto shape = knn_index->shape();
+    // std::cout << "No. of vectors: " << shape.first << std::endl;
+    // std::cout << "Dimension of dataset vectors: " << shape.second << std::endl;
+
+    // std::vector<std::vector<float>> queries;
+    // for (int i = 0; i < num_queries; i++) {
+    //     std::vector<float> query;
+    //     for (int j = 0; j < dim; j++) {
+    //         query.push_back(distrib(rng));
+    //     }
+    //     queries.push_back(query);
+    // }
+
+    // std::cout << "No. of query vectors: " << queries.size() << std::endl;
+    // std::cout << "Dimension of query vectors: " << queries[0].size() << std::endl;
+
+    // auto s = std::chrono::high_resolution_clock::now();
+    // auto result = knn_index->search_l2_vanilla(queries, top_k);
+    // auto e = std::chrono::high_resolution_clock::now();
+    // auto dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
+    // std::cout << "Duration (L2 vanilla): " << dur_ms << std::endl;
+    // print_matrix(result);
+
+    // s = std::chrono::high_resolution_clock::now();
+    // result = knn_index->search_ip_amx(queries, top_k);
+    // e = std::chrono::high_resolution_clock::now();
+    // dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
+    // std::cout << "Duration (IP AMX): " << dur_ms << std::endl;
+    // print_matrix(result);
 }

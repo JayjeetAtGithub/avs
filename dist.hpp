@@ -12,7 +12,7 @@
 #define PORTABLE_ALIGN64 __declspec(align(64))
 #endif
 
-namespace avs_x {
+namespace avs {
 
 using vecf32_t = std::vector<float>;
 using matf32_t = std::vector<std::vector<float>>;
@@ -122,8 +122,8 @@ static avs::vecf32_t amx_matmul(const int32_t &r, const int32_t &c,
 }
 
 static matf32_t amx_inner_product(int32_t const &n, int32_t const &oc,
-                                  int32_t const &ic, avs::vecf32_t const &s,
-                                  avs::vecf32_t const &w, dnnl::engine &engine,
+                                  int32_t const &ic, const float *s,
+                                  const float* w, dnnl::engine &engine,
                                   dnnl::stream &stream) {
 
   dnnl::memory::dims s_dims = {n, ic};
@@ -135,8 +135,8 @@ static matf32_t amx_inner_product(int32_t const &n, int32_t const &oc,
   auto dst_out_md = dnnl::memory::desc(dst_dims, dt::f32, tag::ab);
   auto s_in_mem = dnnl::memory(s_in_md, engine);
   auto w_in_mem = dnnl::memory(w_in_md, engine);
-  write_to_dnnl_memory(s.data(), s_in_mem);
-  write_to_dnnl_memory(w.data(), w_in_mem);
+  write_to_dnnl_memory(s, s_in_mem);
+  write_to_dnnl_memory(w, w_in_mem);
 
   auto s_md = dnnl::memory::desc(s_dims, dt::bf16, tag::any);
   auto w_md = dnnl::memory::desc(w_dims, dt::bf16, tag::any);
@@ -169,26 +169,23 @@ static matf32_t amx_inner_product(int32_t const &n, int32_t const &oc,
   return result;
 }
 
-static avs::matf32_t ip_distance_amx(avs::matf32_t const &queries,
-                                     avs::matf32_t const &batch,
+void print_vector(const float *data, std::string prefix) {
+  std::cout << prefix << " :";
+  for (unsigned i = 0; i < 10; i++) {
+    std::cout << data[i] << " ";
+  }
+  std::cout << std::endl;
+}
+
+static avs::matf32_t ip_distance_amx(const float* queries,
+                                     const float* data,
+                                     int32_t queries_size,
+                                     int32_t data_size,
+                                     int32_t dim,
                                      dnnl::engine &engine,
                                      dnnl::stream &stream) {
-  int32_t const n = queries.size();
-  int32_t const oc = batch.size();
-  int32_t const ic = queries[0].size();
-  avs::vecf32_t queries_1d(n * ic);
-  avs::vecf32_t batch_1d(oc * ic);
-  for (int32_t i = 0; i < n; i++) {
-    for (int32_t j = 0; j < ic; j++) {
-      queries_1d[i * ic + j] = queries[i][j];
-    }
-  }
-  for (int32_t i = 0; i < oc; i++) {
-    for (int32_t j = 0; j < ic; j++) {
-      batch_1d[i * ic + j] = batch[i][j];
-    }
-  }
-  return amx_inner_product(n, oc, ic, queries_1d, batch_1d, engine, stream);
+  return amx_inner_product(
+    queries_size, data_size, dim, queries, data, engine, stream);
 }
 
 static avs::vecf32_t l2_distance_amx(avs::vecf32_t const &query,
@@ -327,20 +324,6 @@ InnerProductAVX512(const void *vec1, const void *vec2, int32_t const &dim) {
     return sum;
 }
 
-
-static avs::vecf32_t l2_distance_vanilla(avs::vecf32_t const &query,
-                                         avs::matf32_t const &batch,
-                                         dnnl::engine &engine,
-                                         dnnl::stream &stream) {
-  int32_t const dim = batch[0].size();
-  avs::vecf32_t result(batch.size());
-  for (int32_t i = 0; i < batch.size(); i++) {
-    auto d = L2Sqr(query.data(), batch[i].data(), dim);
-    result[i] = d;
-  }
-  return result;
-}
-
 static avs::vecf32_t l2_distance_avx512(avs::vecf32_t const &query,
                                         avs::matf32_t const &batch,
                                         dnnl::engine &engine,
@@ -349,19 +332,6 @@ static avs::vecf32_t l2_distance_avx512(avs::vecf32_t const &query,
   avs::vecf32_t result(batch.size());
   for (int32_t i = 0; i < batch.size(); i++) {
     auto d = L2SqrAVX512(query.data(), batch[i].data(), dim);
-    result[i] = d;
-  }
-  return result;
-}
-
-static avs::vecf32_t ip_distance_vanilla(avs::vecf32_t const &query,
-                                         avs::matf32_t const &batch,
-                                         dnnl::engine &engine,
-                                         dnnl::stream &stream) {
-  int32_t const dim = batch[0].size();
-  avs::vecf32_t result(batch.size());
-  for (int32_t i = 0; i < batch.size(); i++) {
-    auto d = InnerProduct(query.data(), batch[i].data(), dim);
     result[i] = d;
   }
   return result;
