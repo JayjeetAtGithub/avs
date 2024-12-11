@@ -60,8 +60,12 @@ int main(int argc, char **argv) {
             queries[i * dim + j] = distrib(rng);
         }
     }
-
+    
+    auto s = std::chrono::high_resolution_clock::now();
     ivf_index->train(data.data(), num_vectors, dim);
+    auto e = std::chrono::high_resolution_clock::now();
+    auto us = std::chrono::duration_cast<std::chrono::microseconds>(e - s).count();
+    std::cout << "Training time: " << us << " us" << std::endl;
     ivf_index->print_inverted_list();
 
     // auto knn_index = new avs::KNNSearch(dim, batch_size);
