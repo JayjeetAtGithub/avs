@@ -22,6 +22,9 @@ namespace avs {
         void _init_onednn() {
             _engine = dnnl::engine(dnnl::engine::kind::cpu, 0);
             _stream = dnnl::stream(_engine);
+            if (!is_amxbf16_supported()) {
+                std::cout << "Intel AMX unavailable" << std::endl;
+            }
         }
 
         void _create_clusters(
