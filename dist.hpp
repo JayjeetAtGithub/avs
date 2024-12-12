@@ -55,9 +55,9 @@ static void write_to_dnnl_memory(void const *handle, dnnl::memory &mem) {
   }
 }
 
-static avs::vecf32_t amx_matmul(const int32_t &r, const int32_t &c,
-                                avs::vecf32_t const &m, avs::vecf32_t const &mt,
-                                dnnl::engine &engine, dnnl::stream &stream) {
+static void amx_matmul(const int32_t &r, const int32_t &c,
+                      avs::vecf32_t const &m, avs::vecf32_t const &mt,
+                      dnnl::engine &engine, dnnl::stream &stream) {
   avs::vecf32_t dst(r * r, 0.0f);
 
   dnnl::memory::dims a_dims = {r, c};
@@ -74,7 +74,8 @@ static avs::vecf32_t amx_matmul(const int32_t &r, const int32_t &c,
 
   auto a_md = dnnl::memory::desc(a_dims, dt::bf16, tag::any);
   auto b_md = dnnl::memory::desc(b_dims, dt::bf16, tag::any);
-  auto pd = dnnl::matmul::primitive_desc(engine, a_md, b_md, c_out_md);
+  auto c_md = dnnl::memory::desc(c_dims, dt::bf16, tag::any);
+  auto pd = dnnl::matmul::primitive_desc(engine, a_md, b_md, c_md);
 
   auto a_mem = dnnl::memory(pd.src_desc(), engine);
   dnnl::reorder(a_in_mem, a_mem).execute(stream, a_in_mem, a_mem);
@@ -89,13 +90,6 @@ static avs::vecf32_t amx_matmul(const int32_t &r, const int32_t &c,
   args.insert({DNNL_ARG_DST, c_mem});
   prim.execute(stream, args);
   stream.wait();
-
-  read_from_dnnl_memory(dst.data(), c_mem);
-  avs::vecf32_t result(r, 0.0f);
-  for (int32_t i = 0; i < r; i++) {
-    result[i] = dst[i * r + i];
-  }
-  return result;
 }
 
 static void amx_inner_product(int32_t const &n, int32_t const &oc,
