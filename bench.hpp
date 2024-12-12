@@ -76,6 +76,8 @@ void run_ip_N_x_N(dnnl::engine &engine, dnnl::stream &stream, uint64_t size) {
         }
     }
 
+    std::cout << "Data size: " << (double)(size * size * 8) / pow(10, 6) << " MiB" << std::endl;
+
     _mm_prefetch(mat_a.data(), _MM_HINT_T0);
     _mm_prefetch(mat_b.data(), _MM_HINT_T0);
 
