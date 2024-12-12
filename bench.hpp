@@ -18,7 +18,7 @@ public:
     dnnl::stream stream;
     pprinter *pt;
     std::vector<std::string> headers = 
-        {"Mode", "N1 / N2 / M", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"};
+        {"Mode", "N1 / N2 / M", "Data size (MiB)", "Total FLOP", "Duration (us)", "GFLOPS"};
 
     Benchmark(dnnl::engine engine, dnnl::stream stream) : engine(engine), stream(stream) {
         pt = new pprinter(headers);
@@ -63,8 +63,8 @@ public:
                 ip_distance_avx512(mat_a.data() + i * mat_a_dim, mat_b.data(), mat_b_size, mat_b_dim, engine, stream);
             }
             auto end = std::chrono::high_resolution_clock::now();
-            auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-            double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
+            auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 6)));
             pt->addRow("IP / AVX512", dims, data_size, total_flop, dur, gflops);
         }
 
@@ -73,10 +73,10 @@ public:
             auto t = ip_distance_amx(
                 mat_a.data(), mat_b.data(), mat_a_size, mat_b_size, mat_b_dim, engine, stream);
             auto end = std::chrono::high_resolution_clock::now();
-            auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-            double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
+            auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 6)));
             pt->addRow("IP / AMX", dims, data_size, total_flop, dur, gflops);
-            double gflops2 = ((double)(total_flop / pow(10, 9))) / ((double)(t / pow(10, 3)));
+            double gflops2 = ((double)(total_flop / pow(10, 9))) / ((double)(t / pow(10, 6)));
             pt->addRow("IP / AMX (no overhead)", dims, data_size, total_flop, t, gflops2);
         }
     }

@@ -130,7 +130,7 @@ static auto amx_inner_product(int32_t const &n, int32_t const &oc,
   auto st = std::chrono::high_resolution_clock::now();
   prim.execute(stream, args);
   auto en = std::chrono::high_resolution_clock::now();
-  auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(en - st).count();
+  auto dur = std::chrono::duration_cast<std::chrono::microseconds>(en - st).count();
   stream.wait();
   return dur;
 }
