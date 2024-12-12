@@ -127,10 +127,10 @@ static auto amx_inner_product(int32_t const &n, int32_t const &oc,
   args.insert({DNNL_ARG_SRC, s_mem});
   args.insert({DNNL_ARG_WEIGHTS, w_mem});
   args.insert({DNNL_ARG_DST, dst_mem});
-  auto s = std::chrono::high_resolution_clock::now();
+  auto st = std::chrono::high_resolution_clock::now();
   prim.execute(stream, args);
-  auto e = std::chrono::high_resolution_clock::now();
-  auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
+  auto en = std::chrono::high_resolution_clock::now();
+  auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(en - st).count();
   stream.wait();
   return dur;
 }
