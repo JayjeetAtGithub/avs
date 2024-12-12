@@ -67,7 +67,8 @@ void run_ip_N_x_N(dnnl::engine &engine, dnnl::stream &stream) {
         }
     }
 
-    int64_t total_flop = mat_a_size * mat_b_size * (2 * mat_a_dim - 1);
+    int64_t total_flop = (int64_t)mat_a_size * (int64_t)mat_b_size * (2 * (int64_t)mat_a_dim - 1);
+    std::cout << "Total Floating Point Operations: " << total_flop << std::endl;
 
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < mat_a_size; i++) {
