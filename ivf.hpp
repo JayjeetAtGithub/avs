@@ -1,3 +1,5 @@
+#pragma once
+
 #include <faiss/Clustering.h>
 #include "dist.hpp"
 #include <cassert>

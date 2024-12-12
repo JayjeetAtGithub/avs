@@ -3,20 +3,8 @@
 #include <random>
 
 #include "ivf.hpp"
+#include "bench.hpp"
 #include "CLI11.hpp"
-
-
-void print_matrix(std::vector<std::vector<float>> &mat) {
-    size_t limit = 10;
-    for (int i = 0; i < std::min(mat.size(), limit); i++) {
-        for (int j = 0; j < mat[0].size(); j++) {
-            std::cout << mat[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}
-
 
 int main(int argc, char **argv) {
     CLI::App app{"Accelerated Vector Search"};
@@ -38,6 +26,9 @@ int main(int argc, char **argv) {
     app.add_option("--nq", num_queries, "Number of queries to execute");
 
     CLI11_PARSE(app, argc, argv);
+
+    // Run hardware benchmarks
+    avs::run_bench();
 
     std::mt19937 rng;
     rng.seed(47);
