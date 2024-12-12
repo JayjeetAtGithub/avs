@@ -92,8 +92,6 @@ void run_bench() {
     dnnl::stream stream(engine);
     run_ip_1_x_N(engine, stream);
     run_ip_N_x_N(engine, stream);
-
-    //  (2 * dim - 1)
 }
 
 } // namespace avs
