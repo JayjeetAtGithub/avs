@@ -117,9 +117,10 @@ static matf32_t amx_inner_product(int32_t const &n, int32_t const &oc,
 
   auto s_md = dnnl::memory::desc(s_dims, dt::bf16, tag::any);
   auto w_md = dnnl::memory::desc(w_dims, dt::bf16, tag::any);
+  auto dst_md = dnnl::memory::desc(dst_dims, dt::bf16, tag::any);
 
   auto pd = dnnl::inner_product_forward::primitive_desc(
-      engine, dnnl::prop_kind::forward_training, s_md, w_md, dst_out_md);
+      engine, dnnl::prop_kind::forward_training, s_md, w_md, dst_md);
 
   auto s_mem = dnnl::memory(pd.src_desc(), engine);
   dnnl::reorder(s_in_mem, s_mem).execute(stream, s_in_mem, s_mem);
