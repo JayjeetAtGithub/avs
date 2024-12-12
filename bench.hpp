@@ -20,11 +20,13 @@ public:
 
     Benchmark(dnnl::engine engine, dnnl::stream stream) : engine(engine), stream(stream) {
         pt = new pprinter({"Mode", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
+        pt->setColumnPrecision({2, 2, 2, 2, 2});
     }
 
     void print_results() {
         pt->print(std::cout);
         pt = new pprinter({"Mode", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
+        pt->setColumnPrecision({2, 2, 2, 2, 2});
     }
  
     void run_ip_1_x_N(uint64_t size) {
