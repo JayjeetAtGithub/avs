@@ -55,14 +55,13 @@ static void write_to_dnnl_memory(void const *handle, dnnl::memory &mem) {
   }
 }
 
-static void amx_matmul(const int32_t &r, const int32_t &c,
+static void amx_matmul(int32_t const &r1, int32_t const &r2, const int32_t &c,
                       const float *a, const float *b,
                       dnnl::engine &engine, dnnl::stream &stream) {
-  avs::vecf32_t dst(r * r, 0.0f);
-
-  dnnl::memory::dims a_dims = {r, c};
-  dnnl::memory::dims b_dims = {c, r};
-  dnnl::memory::dims c_dims = {r, r};
+  avs::vecf32_t dst(r1 * r2, 0.0f);
+  dnnl::memory::dims a_dims = {r1, c};
+  dnnl::memory::dims b_dims = {c, r2};
+  dnnl::memory::dims c_dims = {r1, r2};
 
   auto a_in_md = dnnl::memory::desc(a_dims, dt::f32, tag::ab);
   auto b_in_md = dnnl::memory::desc(b_dims, dt::f32, tag::ab);
@@ -92,7 +91,7 @@ static void amx_matmul(const int32_t &r, const int32_t &c,
   stream.wait();
 }
 
-static auto amx_inner_product(int32_t const &n, int32_t const &oc,
+static void amx_inner_product(int32_t const &n, int32_t const &oc,
                               int32_t const &ic, const float *s,
                               const float* w, dnnl::engine &engine,
                               dnnl::stream &stream) {
@@ -127,23 +126,8 @@ static auto amx_inner_product(int32_t const &n, int32_t const &oc,
   args.insert({DNNL_ARG_SRC, s_mem});
   args.insert({DNNL_ARG_WEIGHTS, w_mem});
   args.insert({DNNL_ARG_DST, dst_mem});
-  auto st = std::chrono::high_resolution_clock::now();
   prim.execute(stream, args);
-  auto en = std::chrono::high_resolution_clock::now();
-  auto dur = std::chrono::duration_cast<std::chrono::microseconds>(en - st).count();
   stream.wait();
-  return dur;
-}
-
-static auto ip_distance_amx(const float* queries,
-                                     const float* data,
-                                     int32_t queries_size,
-                                     int32_t data_size,
-                                     int32_t dim,
-                                     dnnl::engine &engine,
-                                     dnnl::stream &stream) {
-  return amx_inner_product(
-    queries_size, data_size, dim, queries, data, engine, stream);
 }
 
 static float inner_product(void const *vec1, void const *vec2,

@@ -30,26 +30,21 @@ public:
     }
 
     void run_ip(uint64_t N1, uint64_t N2, uint64_t M) {
-        uint64_t mat_a_size = N1;
-        uint64_t mat_a_dim = M;
-        uint64_t mat_b_size = N2;
-        uint64_t mat_b_dim = M;
-
-        std::vector<float> mat_a(mat_a_size * mat_a_dim);
-        std::vector<float> mat_b(mat_b_size * mat_b_dim);
+        std::vector<float> mat_a(N1 * M);
+        std::vector<float> mat_b(N2 * M);
 
         std::mt19937 rng;
         rng.seed(47);
         std::uniform_real_distribution<float> distrib;
 
-        for (uint64_t i = 0; i < mat_a_size; i++) {
-            for (uint64_t j = 0; j < mat_a_dim; j++) {
-                mat_a[i * mat_a_dim + j] = distrib(rng);
+        for (uint64_t i = 0; i < N1; i++) {
+            for (uint64_t j = 0; j < M; j++) {
+                mat_a[i * M + j] = distrib(rng);
             }
         }
-        for (uint64_t i = 0; i < mat_b_size; i++) {
-            for (uint64_t j = 0; j < mat_b_dim; j++) {
-                mat_b[i * mat_b_dim + j] = distrib(rng);
+        for (uint64_t i = 0; i < N2; i++) {
+            for (uint64_t j = 0; j < M; j++) {
+                mat_b[i * M + j] = distrib(rng);
             }
         }
 
@@ -59,8 +54,8 @@ public:
 
         if (!only_amx) {
             auto start = std::chrono::high_resolution_clock::now();
-            for (uint64_t i = 0; i < mat_a_size; i++) {
-                ip_distance_avx512(mat_a.data() + i * mat_a_dim, mat_b.data(), mat_b_size, mat_b_dim, engine, stream);
+            for (uint64_t i = 0; i < N1; i++) {
+                ip_distance_avx512(mat_a.data() + i * M, mat_b.data(), N2, M, engine, stream);
             }
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
@@ -70,14 +65,48 @@ public:
 
         {
             auto start = std::chrono::high_resolution_clock::now();
-            auto t = ip_distance_amx(
-                mat_a.data(), mat_b.data(), mat_a_size, mat_b_size, mat_b_dim, engine, stream);
+            amx_inner_product(
+                N1, N2, M, mat_a.data(), mat_b.data(), engine, stream);
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
             double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 6)));
             pt->addRow("IP / AMX", dims, data_size, total_flop, dur, gflops);
-            double gflops2 = ((double)(total_flop / pow(10, 9))) / ((double)(t / pow(10, 6)));
-            pt->addRow("IP / AMX (no overhead)", dims, data_size, total_flop, t, gflops2);
+        }
+    }
+
+    void run_gemm(uint64_t N1, uint64_t N2, uint64_t M) {
+        std::vector<float> mat_a(N1 * M);
+        std::vector<float> mat_b(M * N2);
+
+        std::mt19937 rng;
+        rng.seed(47);
+        std::uniform_real_distribution<float> distrib;
+
+        for (uint64_t i = 0; i < N1; i++) {
+            for (uint64_t j = 0; j < M; j++) {
+                mat_a[i * M + j] = distrib(rng);
+            }
+        }
+        for (uint64_t i = 0; i < M; i++) {
+            for (uint64_t j = 0; j < N2; j++) {
+                mat_b[i * N2 + j] = distrib(rng);
+            }
+        }
+
+        double data_size = ((double)(N1 * M * 4) + (double)(N2 * M * 4)) / pow(10, 6);
+        uint64_t total_flop = (N1 * N2) * (2 * M - 1);
+        std::string dims = std::to_string(N1) + "/" + std::to_string(N2) + "/" + std::to_string(M);
+
+        {
+            auto start = std::chrono::high_resolution_clock::now();
+            amx_matmul(
+                N1, N2, M, mat_a.data(), mat_b.data(), engine, stream);
+            auto end = std::chrono::high_resolution_clock::now();
+            auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 6)));
+            pt->addRow("GEMM / AMX", dims, data_size, total_flop, dur, gflops);
+            // double gflops2 = ((double)(total_flop / pow(10, 9))) / ((double)(t / pow(10, 6)));
+            // pt->addRow("GEMM / AMX (no overhead)", dims, data_size, total_flop, t, gflops2);
         }
     }
 };
@@ -93,6 +122,10 @@ void run_bench() {
     std::vector<uint64_t> sizes = {64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768};
     for (auto size : sizes) {
         bench.run_ip(size, size, size);
+    }
+    bench.print_results();
+    for (auto size : sizes) {
+        bench.run_gemm(size, size, size);
     }
     bench.print_results();
 }
