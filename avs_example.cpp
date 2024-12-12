@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
     ivf_index->train(data.data(), num_vectors);
     auto e = std::chrono::high_resolution_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
-    std::cout << "Training time: " << ms << " ms" << std::endl;
+    std::cout << "Training time (AMX): " << ms << " ms" << std::endl;
 
     s = std::chrono::high_resolution_clock::now();
     auto res = ivf_index->search(
@@ -80,10 +80,4 @@ int main(int argc, char **argv) {
     ms = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
     std::cout << "Search time (AVX512): " << ms << " ms" << std::endl;
 
-    for (int i = 0; i < num_queries; i++) {
-        for (int j = 0; j < std::min(top_k, 10); j++) {
-            std::cout << res[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
 }
