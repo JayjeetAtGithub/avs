@@ -100,14 +100,6 @@ public:
         double data_size = (double)(size * size * 8) / pow(10, 6);
         uint64_t total_flop = (uint64_t)mat_a_size * (uint64_t)mat_b_size * (2 * (uint64_t)mat_a_dim - 1);
 
-        // experimental
-        for (uint64_t i = 0; i < data_size /  2; i += 64) {
-            _mm_prefetch(mat_a.data() + i * mat_a_dim, _MM_HINT_T2);
-        }
-        _mm_prefetch(mat_a.data(), _MM_HINT_T2);
-        _mm_prefetch(mat_b.data(), _MM_HINT_T2);
-        // experimental
-
         if (!only_amx) {
             auto start = std::chrono::high_resolution_clock::now();
             for (int i = 0; i < mat_a_size; i++) {
