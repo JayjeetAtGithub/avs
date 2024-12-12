@@ -4,15 +4,13 @@
 #include <random>
 #include "dist.hpp"
 
-#define CONST_A 2048
-
 namespace avs {
 
-void run_ip_1_x_N(dnnl::engine &engine, dnnl::stream &stream) {
+void run_ip_1_x_N(dnnl::engine &engine, dnnl::stream &stream, uint64_t size) {
     uint64_t mat_a_size = 1;
-    uint64_t mat_a_dim = CONST_A;
-    uint64_t mat_b_size = CONST_A;
-    uint64_t mat_b_dim = CONST_A;
+    uint64_t mat_a_dim = size;
+    uint64_t mat_b_size = size;
+    uint64_t mat_b_dim = size;
 
     std::vector<float> mat_a(mat_a_size * mat_a_dim);
     std::vector<float> mat_b(mat_b_size * mat_b_dim);
@@ -54,11 +52,11 @@ void run_ip_1_x_N(dnnl::engine &engine, dnnl::stream &stream) {
     }
 }
 
-void run_ip_N_x_N(dnnl::engine &engine, dnnl::stream &stream) {
-    uint64_t mat_a_size = CONST_A;
-    uint64_t mat_a_dim = CONST_A;
-    uint64_t mat_b_size = CONST_A;
-    uint64_t mat_b_dim = CONST_A;
+void run_ip_N_x_N(dnnl::engine &engine, dnnl::stream &stream, uint64_t size) {
+    uint64_t mat_a_size = size;
+    uint64_t mat_a_dim = size;
+    uint64_t mat_b_size = size;
+    uint64_t mat_b_dim = size;
 
     std::vector<float> mat_a(mat_a_size * mat_a_dim);
     std::vector<float> mat_b(mat_b_size * mat_b_dim);
@@ -108,8 +106,11 @@ void run_ip_N_x_N(dnnl::engine &engine, dnnl::stream &stream) {
 void run_bench() {
     dnnl::engine engine(dnnl::engine::kind::cpu, 0);
     dnnl::stream stream(engine);
-    // run_ip_1_x_N(engine, stream);
-    run_ip_N_x_N(engine, stream);
+
+    std::vector<uint64_t> sizes = {64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536};
+    for (auto size : sizes) {
+        run_ip_N_x_N(engine, stream, size);
+    }
 }
 
 } // namespace avs
