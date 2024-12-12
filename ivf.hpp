@@ -51,7 +51,6 @@ namespace avs {
                 }
             }
 
-
             std::vector<std::vector<int32_t>> search_avx(
                 const float *queries, int32_t n_query, const float *data, int32_t n_data, int32_t top_k) {
                 auto const res_matrix = ip_distance_amx(
