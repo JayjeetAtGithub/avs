@@ -137,14 +137,14 @@ static void amx_inner_product(int32_t const &n, int32_t const &oc,
   stream.wait();
 }
 
-static avs::matf32_t ip_distance_amx(const float* queries,
+static void ip_distance_amx(const float* queries,
                                      const float* data,
                                      int32_t queries_size,
                                      int32_t data_size,
                                      int32_t dim,
                                      dnnl::engine &engine,
                                      dnnl::stream &stream) {
-  return amx_inner_product(
+  amx_inner_product(
     queries_size, data_size, dim, queries, data, engine, stream);
 }
 
