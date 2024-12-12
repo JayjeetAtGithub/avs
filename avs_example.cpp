@@ -52,25 +52,4 @@ int main(int argc, char **argv) {
             queries[i * dim + j] = distrib(rng);
         }
     }
-    
-    auto s = std::chrono::high_resolution_clock::now();
-    ivf_index->train(data.data(), num_vectors);
-    auto e = std::chrono::high_resolution_clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
-    std::cout << "Training time (AMX): " << ms << " ms" << std::endl;
-
-    s = std::chrono::high_resolution_clock::now();
-    auto res = ivf_index->search(
-        queries.data(), num_queries, data.data(), num_vectors, top_k);
-    e = std::chrono::high_resolution_clock::now();
-    ms = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
-    std::cout << "Search time (AMX): " << ms << " ms" << std::endl;
-
-    s = std::chrono::high_resolution_clock::now();
-    res = ivf_index->search_avx(
-        queries.data(), num_queries, data.data(), num_vectors, top_k);
-    e = std::chrono::high_resolution_clock::now();
-    ms = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
-    std::cout << "Search time (AVX512): " << ms << " ms" << std::endl;
-
 }
