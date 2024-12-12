@@ -93,7 +93,7 @@ public:
             }
         }
 
-        double data_size = ((double)(N1 * M * 4) + (double)(N2 * M * 4)) / pow(10, 6);
+        double data_size = ((double)(N1 * M * 4) + (double)(M * N2 * 4)) / pow(10, 6);
         uint64_t total_flop = (N1 * N2) * (2 * M - 1);
         std::string dims = std::to_string(N1) + "/" + std::to_string(N2) + "/" + std::to_string(M);
 
@@ -105,8 +105,6 @@ public:
             auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
             double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 6)));
             pt->addRow("GEMM / AMX", dims, data_size, total_flop, dur, gflops);
-            // double gflops2 = ((double)(total_flop / pow(10, 9))) / ((double)(t / pow(10, 6)));
-            // pt->addRow("GEMM / AMX (no overhead)", dims, data_size, total_flop, t, gflops2);
         }
     }
 };
