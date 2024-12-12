@@ -4,13 +4,15 @@
 #include <random>
 #include "dist.hpp"
 
+#define CONST_A 8192
+
 namespace avs {
 
 void run_ip_1_x_N(dnnl::engine &engine, dnnl::stream &stream) {
     int32_t mat_a_size = 1;
-    int32_t mat_a_dim = 8192;
-    int32_t mat_b_size = 8192;
-    int32_t mat_b_dim = 8192;
+    int32_t mat_a_dim = CONST_A;
+    int32_t mat_b_size = CONST_A;
+    int32_t mat_b_dim = CONST_A;
 
     std::vector<float> mat_a(mat_a_size * mat_a_dim);
     std::vector<float> mat_b(mat_b_size * mat_b_dim);
@@ -50,10 +52,10 @@ void run_ip_1_x_N(dnnl::engine &engine, dnnl::stream &stream) {
 }
 
 void run_ip_N_x_N(dnnl::engine &engine, dnnl::stream &stream) {
-    int32_t mat_a_size = 8192;
-    int32_t mat_a_dim = 8192;
-    int32_t mat_b_size = 8192;
-    int32_t mat_b_dim = 8192;
+    int32_t mat_a_size = CONST_A;
+    int32_t mat_a_dim = CONST_A;
+    int32_t mat_b_size = CONST_A;
+    int32_t mat_b_dim = CONST_A;
 
     std::vector<float> mat_a(mat_a_size * mat_a_dim);
     std::vector<float> mat_b(mat_b_size * mat_b_dim);
