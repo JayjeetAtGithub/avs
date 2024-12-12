@@ -98,7 +98,7 @@ static avs::vecf32_t amx_matmul(const int32_t &r, const int32_t &c,
   return result;
 }
 
-static matf32_t amx_inner_product(int32_t const &n, int32_t const &oc,
+static void amx_inner_product(int32_t const &n, int32_t const &oc,
                                   int32_t const &ic, const float *s,
                                   const float* w, dnnl::engine &engine,
                                   dnnl::stream &stream) {
@@ -136,15 +136,15 @@ static matf32_t amx_inner_product(int32_t const &n, int32_t const &oc,
   prim.execute(stream, args);
   stream.wait();
 
-  avs::vecf32_t dst(n * oc, 0.0f);
-  read_from_dnnl_memory(dst.data(), dst_mem);
-  avs::matf32_t result(n, avs::vecf32_t(oc, 0.0f));
-  for (int32_t i = 0; i < n; i++) {
-    for (int32_t j = 0; j < oc; j++) {
-      result[i][j] = dst[i * oc + j];
-    }
-  }
-  return result;
+  // avs::vecf32_t dst(n * oc, 0.0f);
+  // read_from_dnnl_memory(dst.data(), dst_mem);
+  // avs::matf32_t result(n, avs::vecf32_t(oc, 0.0f));
+  // for (int32_t i = 0; i < n; i++) {
+  //   for (int32_t j = 0; j < oc; j++) {
+  //     result[i][j] = dst[i * oc + j];
+  //   }
+  // }
+  // return result;
 }
 
 static avs::matf32_t ip_distance_amx(const float* queries,
