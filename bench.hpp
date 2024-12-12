@@ -77,14 +77,14 @@ void run_ip_N_x_N(dnnl::engine &engine, dnnl::stream &stream) {
     auto end = std::chrono::high_resolution_clock::now();
     auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "IP N x N AVX512: " << dur << " ms" << std::endl;
-    std::cout << "Flops: " << ((double)total_flop) / ((double)(dur / pow(10, 3))) << std::endl;
+    std::cout << "GFLOPS: " << ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3))) << std::endl;
 
     start = std::chrono::high_resolution_clock::now();
     ip_distance_amx(mat_a.data(), mat_b.data(), mat_a_size, mat_b_size, mat_b_dim, engine, stream);
     end = std::chrono::high_resolution_clock::now();
     dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     std::cout << "IP N x N AMX: " << dur << " ms" << std::endl;
-    std::cout << "Flops: " << ((double)total_flop) / ((double)(dur / pow(10, 3))) << std::endl;
+    std::cout << "GFLOPS: " << ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3))) << std::endl;
 }   
 
 void run_bench() {
