@@ -78,13 +78,13 @@ void run_ip_N_x_N(dnnl::engine &engine, dnnl::stream &stream) {
         }
     }
 
-    _mm_prefetch(mat_a.data(), _MM_HINT_T2);
-    _mm_prefetch(mat_b.data(), _MM_HINT_T2);
+    _mm_prefetch(mat_a.data(), _MM_HINT_T0);
+    _mm_prefetch(mat_b.data(), _MM_HINT_T0);
 
     uint64_t total_flop = (uint64_t)mat_a_size * (uint64_t)mat_b_size * (2 * (uint64_t)mat_a_dim - 1);
     std::cout << "Total Floating Point Operations: " << total_flop << std::endl;
 
-    {
+    /*{
         auto start = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < mat_a_size; i++) {
             ip_distance_avx512(mat_a.data() + i * mat_a_dim, mat_b.data(), mat_b_size, mat_b_dim, engine, stream);
@@ -93,7 +93,7 @@ void run_ip_N_x_N(dnnl::engine &engine, dnnl::stream &stream) {
         auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
         std::cout << "IP N x N AVX512: " << dur << " ms" << std::endl;
         std::cout << "GFLOPS: " << ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3))) << std::endl;
-    }
+    }*/
 
     {
         auto start = std::chrono::high_resolution_clock::now();
@@ -103,12 +103,12 @@ void run_ip_N_x_N(dnnl::engine &engine, dnnl::stream &stream) {
         std::cout << "IP N x N AMX: " << dur << " ms" << std::endl;
         std::cout << "GFLOPS: " << ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3))) << std::endl;
     }
-}   
+}
 
 void run_bench() {
     dnnl::engine engine(dnnl::engine::kind::cpu, 0);
     dnnl::stream stream(engine);
-    run_ip_1_x_N(engine, stream);
+    // run_ip_1_x_N(engine, stream);
     run_ip_N_x_N(engine, stream);
 }
 
