@@ -5,8 +5,6 @@ g++ -O3 \
     -std=c++17 \
     avs_example.cpp \
     -ldnnl \
-    -lfaiss \
-    -fopenmp \
     -fomit-frame-pointer \
     -lopenblas \
     -march=native \
