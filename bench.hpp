@@ -107,7 +107,7 @@ void run_bench() {
     dnnl::engine engine(dnnl::engine::kind::cpu, 0);
     dnnl::stream stream(engine);
 
-    std::vector<uint64_t> sizes = {64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536};
+    std::vector<uint64_t> sizes = {64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768};
     for (auto size : sizes) {
         run_ip_N_x_N(engine, stream, size);
     }
