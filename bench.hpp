@@ -7,7 +7,7 @@
 #include "dist.hpp"
 #include "VariadicTable.hpp"
 
-using pprinter = VariadicTable<std::string, uint64_t, double, double, double, double>;
+using pprinter = VariadicTable<std::string, std::string, double, double, double, double>;
 
 namespace avs {
 
@@ -55,7 +55,7 @@ public:
 
         double data_size = ((double)(N1 * M * 4) + (double)(N2 * M * 4)) / pow(10, 6);
         uint64_t total_flop = (N1 * N2) * (2 * M - 1);
-        std::string dims = std::to_string(N1) + "/" + std::to_string(N2) + "/" std::to_string(M);
+        std::string dims = std::to_string(N1) + "/" + std::to_string(N2) + "/" + std::to_string(M);
 
         if (!only_amx) {
             auto start = std::chrono::high_resolution_clock::now();
