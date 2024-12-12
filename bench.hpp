@@ -7,7 +7,7 @@
 #include "dist.hpp"
 #include "VariadicTable.hpp"
 
-using pprinter = VariadicTable<std::string, double, double, double, double>;
+using pprinter = VariadicTable<std::string, uint64_t, double, double, double, double>;
 
 namespace avs {
 
@@ -19,14 +19,12 @@ public:
     pprinter *pt;
 
     Benchmark(dnnl::engine engine, dnnl::stream stream) : engine(engine), stream(stream) {
-        pt = new pprinter({"Mode", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
-        pt->setColumnPrecision({2, 2, 2, 2, 2});
+        pt = new pprinter({"Mode", "N", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
     }
 
     void print_results() {
         pt->print(std::cout);
-        pt = new pprinter({"Mode", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
-        pt->setColumnPrecision({2, 2, 2, 2, 2});
+        pt = new pprinter({"Mode", "N", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
     }
  
     void run_ip_1_x_N(uint64_t size) {
@@ -62,7 +60,7 @@ public:
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
-            pt->addRow("IP / AVX 512 / 1 x N", data_size, total_flop, dur, gflops);
+            pt->addRow("IP / AVX 512 / 1 x N", size, data_size, total_flop, dur, gflops);
         }
 
         {
@@ -71,7 +69,7 @@ public:
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
-            pt->addRow("IP / AMX / 1 x N", data_size, total_flop, dur, gflops);
+            pt->addRow("IP / AMX / 1 x N", size, data_size, total_flop, dur, gflops);
         }
     }
 
@@ -99,11 +97,16 @@ public:
             }
         }
 
-        _mm_prefetch(mat_a.data(), _MM_HINT_T2);
-        _mm_prefetch(mat_b.data(), _MM_HINT_T2);
-        
         double data_size = (double)(size * size * 8) / pow(10, 6);
         uint64_t total_flop = (uint64_t)mat_a_size * (uint64_t)mat_b_size * (2 * (uint64_t)mat_a_dim - 1);
+
+        // experimental
+        for (uint64_t i = 0; i < data_size /  2; i += 64) {
+            _mm_prefetch(mat_a.data() + i * mat_a_dim, _MM_HINT_T2);
+        }
+        _mm_prefetch(mat_a.data(), _MM_HINT_T2);
+        _mm_prefetch(mat_b.data(), _MM_HINT_T2);
+        // experimental
 
         if (!only_amx) {
             auto start = std::chrono::high_resolution_clock::now();
@@ -113,7 +116,7 @@ public:
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
-            pt->addRow("IP / AVX 512 / N x N", data_size, total_flop, dur, gflops);
+            pt->addRow("IP / AVX 512 / N x N", size, data_size, total_flop, dur, gflops);
         }
 
         {
@@ -122,7 +125,7 @@ public:
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
-            pt->addRow("IP / AMX / N x N", data_size, total_flop, dur, gflops);
+            pt->addRow("IP / AMX / N x N", size, data_size, total_flop, dur, gflops);
         }
     }
 };
