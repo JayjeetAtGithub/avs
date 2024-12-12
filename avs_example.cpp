@@ -67,7 +67,17 @@ int main(int argc, char **argv) {
     auto e = std::chrono::high_resolution_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
     std::cout << "Training time: " << ms << " ms" << std::endl;
-    ivf_index->print_inverted_list();
+
+
+    auto res = ivf_index->search(
+        queries.data(), num_queries, data.data(), num_vectors, top_k);
+
+    for (int i = 0; i < num_queries; i++) {
+        for (int j = 0; j < std::min(top_k, 10); j++) {
+            std::cout << res[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
 
     // auto knn_index = new avs::KNNSearch(dim, batch_size);
 
