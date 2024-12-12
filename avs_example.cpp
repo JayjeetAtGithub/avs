@@ -2,7 +2,6 @@
 #include <vector>
 #include <random>
 
-#include "ivf.hpp"
 #include "bench.hpp"
 #include "CLI11.hpp"
 
@@ -29,27 +28,4 @@ int main(int argc, char **argv) {
 
     // Run hardware benchmarks
     avs::run_bench();
-
-    std::mt19937 rng;
-    rng.seed(47);
-    std::uniform_real_distribution<float> distrib;
-
-
-    int32_t n_list = 4 * std::sqrt(num_vectors);
-    auto ivf_index = new avs::IVFFlat(n_list, 1, dim, avs::metric::IP);
-
-    std::vector<float> data(dim * num_vectors);
-    std::vector<float> queries(dim * num_queries);
-
-    for (int i = 0; i < num_vectors; i++) {
-        for (int j = 0; j < dim; j++) {
-            data[i * dim + j] = distrib(rng);
-        }
-    }
-
-    for (int i = 0; i < num_queries; i++) {
-        for (int j = 0; j < dim; j++) {
-            queries[i * dim + j] = distrib(rng);
-        }
-    }
 }
