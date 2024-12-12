@@ -9,10 +9,11 @@ namespace avs {
     };
 
     class IVFFlat {
-        int32_t n_list;
-        int32_t n_probe;
+        int32_t _n_list;
+        int32_t _n_probe;
+        int32_t _dim;
         float *centroids;
-        metric metric_type;
+        metric _metric_type;
         dnnl::engine _engine;
         dnnl::stream _stream;
 
@@ -29,34 +30,26 @@ namespace avs {
 
         void _create_clusters(
                 const float *data,
-                int32_t n_data,
-                int32_t dim
+                int32_t n_data
             ) {
-                centroids = new float[n_list * dim];
+                centroids = new float[_n_list * _dim];
                 float err = faiss::kmeans_clustering(
-                    dim,
+                    _dim,
                     n_data,
-                    n_list,
+                    _n_list,
                     data,
                     centroids
                 );
-
-                for (int32_t i = 0; i < n_list * dim; i++) {
-                    std::cout << centroids[i] << " ";
-                }
-                std::cout << std::endl;
             }
 
             void _map_to_clusters(
                 const float *data,
-                int32_t n_data,
-                int32_t dim
+                int32_t n_data
             ) {
                 // We do cluseter dot product data vectors
                 auto res_matrix = ip_distance_amx(
-                    data, centroids, n_data, n_list, dim, _engine, _stream);
+                    data, centroids, n_data, _n_list, _dim, _engine, _stream);
 
-                std::cout << "Res matrix: " << std::endl;
                 std::cout << res_matrix.size() << " " << res_matrix[0].size() << std::endl;
                 
                 int32_t data_idx = 0;
@@ -67,20 +60,42 @@ namespace avs {
                 }
             }
 
+            std::vector<std::pair<int32_t, int32_t>> _find_closest_centroids(
+                const float *query,
+                int32_t n_query
+            ) {
+                auto res_matrix = ip_distance_amx(
+                    query, centroids, n_query, _n_list, _dim, _engine, _stream);
+
+                // list of pairs of (query idx, centroid idx)
+                std::vector<std::pair<int32_t, int32_t>> closest_centroids;
+
+                for (int32_t i = 0; i < n_query; i++) {
+                    auto centroid_idx = std::min_element(
+                        res_matrix[i].begin(), res_matrix[i].end()) - res_matrix[i].begin();
+                    closest_centroids.push_back(std::make_pair(i, centroid_idx));
+                }
+
+                return closest_centroids;
+            }
+
         public:
 
-            IVFFlat(int32_t n_list, int32_t n_probe, metric metric_type) 
-                : n_list(n_list), n_probe(n_probe), metric_type(metric_type) {
+            IVFFlat(int32_t n_list, int32_t n_probe, int32_t dim, metric metric_type) 
+                : _n_list(n_list), _n_probe(n_probe), _dim(dim), _metric_type(metric_type) {
                 _init_onednn();
             }
 
             void train(
                 const float *data,
-                int32_t n_data,
-                int32_t dim
+                int32_t n_data
             ) {
-                _create_clusters(data, n_data, dim);
-                _map_to_clusters(data, n_data, dim);
+                _create_clusters(data, n_data);
+                _map_to_clusters(data, n_data);
+            }
+
+            void search(const float *queries, int32_t n_query, int32_t top_k) {
+                auto closest_centroids = _find_closest_centroids(queries, n_query);
             }
 
             void print_inverted_list() {

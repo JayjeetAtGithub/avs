@@ -44,7 +44,8 @@ int main(int argc, char **argv) {
     std::uniform_real_distribution<float> distrib;
 
 
-    auto ivf_index = new avs::IVFFlat(10, 2, avs::metric::IP);
+    int32_t n_list = 4 * std::sqrt(num_vectors);
+    auto ivf_index = new avs::IVFFlat(n_list, 1, dim, avs::metric::IP);
 
     std::vector<float> data(dim * num_vectors);
     std::vector<float> queries(dim * num_queries);
@@ -62,10 +63,10 @@ int main(int argc, char **argv) {
     }
     
     auto s = std::chrono::high_resolution_clock::now();
-    ivf_index->train(data.data(), num_vectors, dim);
+    ivf_index->train(data.data(), num_vectors);
     auto e = std::chrono::high_resolution_clock::now();
-    auto us = std::chrono::duration_cast<std::chrono::microseconds>(e - s).count();
-    std::cout << "Training time: " << us << " us" << std::endl;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
+    std::cout << "Training time: " << ms << " ms" << std::endl;
     ivf_index->print_inverted_list();
 
     // auto knn_index = new avs::KNNSearch(dim, batch_size);
