@@ -42,13 +42,13 @@ public:
         rng.seed(47);
         std::uniform_real_distribution<float> distrib;
 
-        for (int i = 0; i < mat_a_size; i++) {
-            for (int j = 0; j < mat_a_dim; j++) {
+        for (uint64_t i = 0; i < mat_a_size; i++) {
+            for (uint64_t j = 0; j < mat_a_dim; j++) {
                 mat_a[i * mat_a_dim + j] = distrib(rng);
             }
         }
-        for (int i = 0; i < mat_b_size; i++) {
-            for (int j = 0; j < mat_b_dim; j++) {
+        for (uint64_t i = 0; i < mat_b_size; i++) {
+            for (uint64_t j = 0; j < mat_b_dim; j++) {
                 mat_b[i * mat_b_dim + j] = distrib(rng);
             }
         }
@@ -59,7 +59,7 @@ public:
 
         if (!only_amx) {
             auto start = std::chrono::high_resolution_clock::now();
-            for (int i = 0; i < mat_a_size; i++) {
+            for (uint64_t i = 0; i < mat_a_size; i++) {
                 ip_distance_avx512(mat_a.data() + i * mat_a_dim, mat_b.data(), mat_b_size, mat_b_dim, engine, stream);
             }
             auto end = std::chrono::high_resolution_clock::now();

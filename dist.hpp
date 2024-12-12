@@ -56,7 +56,7 @@ static void write_to_dnnl_memory(void const *handle, dnnl::memory &mem) {
 }
 
 static void amx_matmul(const int32_t &r, const int32_t &c,
-                      avs::vecf32_t const &m, avs::vecf32_t const &mt,
+                      const float *a, const float *b,
                       dnnl::engine &engine, dnnl::stream &stream) {
   avs::vecf32_t dst(r * r, 0.0f);
 
@@ -93,9 +93,9 @@ static void amx_matmul(const int32_t &r, const int32_t &c,
 }
 
 static void amx_inner_product(int32_t const &n, int32_t const &oc,
-                                  int32_t const &ic, const float *s,
-                                  const float* w, dnnl::engine &engine,
-                                  dnnl::stream &stream) {
+                              int32_t const &ic, const float *s,
+                              const float* w, dnnl::engine &engine,
+                              dnnl::stream &stream) {
 
   dnnl::memory::dims s_dims = {n, ic};
   dnnl::memory::dims w_dims = {oc, ic};
