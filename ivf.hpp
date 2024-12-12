@@ -51,6 +51,48 @@ namespace avs {
                 }
             }
 
+
+            std::vector<std::vector<int32_t>> search_avx(
+                const float *queries, int32_t n_query, const float *data, int32_t n_data, int32_t top_k) {
+                auto const res_matrix = ip_distance_amx(
+                    queries, centroids, n_query, _n_list, _dim, _engine, _stream);
+                std::vector<int32_t> query_target_clusters;
+                for (int32_t i = 0; i < n_query; i++) {
+                    auto const cluster_idx = std::min_element(
+                        res_matrix[i].begin(), res_matrix[i].end()) - res_matrix[i].begin();
+                    query_target_clusters.push_back(cluster_idx);
+                }
+                std::vector<std::vector<int32_t>> result;
+                for (int32_t i = 0; i < n_query; i++) {
+                    auto const cluster_idx = query_target_clusters[i];
+                    auto const data_idxs = inverted_list[cluster_idx];
+                    float *data_candidates = new float[data_idxs.size() * _dim];
+                    for (int32_t j = 0; j < data_idxs.size(); j++) {
+                        for (int32_t k = 0; k < _dim; k++) {
+                            data_candidates[j * _dim + k] = data[data_idxs[j] * _dim + k];
+                        }
+                    }
+                    auto const res = ip_distance_avx512(
+                        queries + i * _dim, data_candidates, data_idxs.size(), _dim, _engine, _stream);
+                    std::priority_queue<
+                        std::pair<int32_t, int32_t>, 
+                        std::vector<std::pair<int32_t, int32_t>>, 
+                        std::greater<std::pair<int32_t, int32_t>>
+                        > 
+                        pq;
+                    for (int32_t j = 0; j < res.size(); j++) {
+                        pq.push(std::make_pair(res[j], j));
+                    }
+                    std::vector<int32_t> top_k_idxs;
+                    for (int32_t j = 0; j < top_k; j++) {
+                        top_k_idxs.push_back(pq.top().second);
+                        pq.pop();
+                    }
+                    result.push_back(top_k_idxs);    
+                }
+                return result;
+            }
+
             std::vector<std::vector<int32_t>> search(
                 const float *queries, int32_t n_query, const float *data, int32_t n_data, int32_t top_k) {
                 auto const res_matrix = ip_distance_amx(

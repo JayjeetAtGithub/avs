@@ -68,9 +68,12 @@ int main(int argc, char **argv) {
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
     std::cout << "Training time: " << ms << " ms" << std::endl;
 
-
+    s = std::chrono::high_resolution_clock::now();
     auto res = ivf_index->search(
         queries.data(), num_queries, data.data(), num_vectors, top_k);
+    e = std::chrono::high_resolution_clock::now();
+    ms = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
+    std::cout << "Search time (AMX): " << ms << " ms" << std::endl;
 
     for (int i = 0; i < num_queries; i++) {
         for (int j = 0; j < std::min(top_k, 10); j++) {
@@ -79,43 +82,17 @@ int main(int argc, char **argv) {
         std::cout << std::endl;
     }
 
-    // auto knn_index = new avs::KNNSearch(dim, batch_size);
+    s = std::chrono::high_resolution_clock::now();
+    res = ivf_index->search_avx(
+        queries.data(), num_queries, data.data(), num_vectors, top_k);
+    e = std::chrono::high_resolution_clock::now();
+    ms = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
+    std::cout << "Search time (AVX512): " << ms << " ms" << std::endl;
 
-    // for (int i = 0; i < num_vectors; i++) {
-    //     std::vector<float> batch;
-    //     for (int j = 0; j < dim; j++) {
-    //         batch.push_back(distrib(rng));
-    //     }
-    //     knn_index->add(batch);
-    // }
-
-    // auto shape = knn_index->shape();
-    // std::cout << "No. of vectors: " << shape.first << std::endl;
-    // std::cout << "Dimension of dataset vectors: " << shape.second << std::endl;
-
-    // std::vector<std::vector<float>> queries;
-    // for (int i = 0; i < num_queries; i++) {
-    //     std::vector<float> query;
-    //     for (int j = 0; j < dim; j++) {
-    //         query.push_back(distrib(rng));
-    //     }
-    //     queries.push_back(query);
-    // }
-
-    // std::cout << "No. of query vectors: " << queries.size() << std::endl;
-    // std::cout << "Dimension of query vectors: " << queries[0].size() << std::endl;
-
-    // auto s = std::chrono::high_resolution_clock::now();
-    // auto result = knn_index->search_l2_vanilla(queries, top_k);
-    // auto e = std::chrono::high_resolution_clock::now();
-    // auto dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
-    // std::cout << "Duration (L2 vanilla): " << dur_ms << std::endl;
-    // print_matrix(result);
-
-    // s = std::chrono::high_resolution_clock::now();
-    // result = knn_index->search_ip_amx(queries, top_k);
-    // e = std::chrono::high_resolution_clock::now();
-    // dur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(e-s).count();
-    // std::cout << "Duration (IP AMX): " << dur_ms << std::endl;
-    // print_matrix(result);
+    for (int i = 0; i < num_queries; i++) {
+        for (int j = 0; j < std::min(top_k, 10); j++) {
+            std::cout << res[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
 }
