@@ -1,7 +1,7 @@
 #pragma once
 
 #include <immintrin.h>
-
+#include <chrono>
 #include <unordered_map>
 
 #include "oneapi/dnnl/dnnl.hpp"
@@ -69,8 +69,8 @@ static void amx_matmul(const int32_t &r, const int32_t &c,
   auto c_out_md = dnnl::memory::desc(c_dims, dt::f32, tag::ab);
   auto a_in_mem = dnnl::memory(a_in_md, engine);
   auto b_in_mem = dnnl::memory(b_in_md, engine);
-  write_to_dnnl_memory(m.data(), a_in_mem);
-  write_to_dnnl_memory(mt.data(), b_in_mem);
+  write_to_dnnl_memory(a, a_in_mem);
+  write_to_dnnl_memory(b, b_in_mem);
 
   auto a_md = dnnl::memory::desc(a_dims, dt::bf16, tag::any);
   auto b_md = dnnl::memory::desc(b_dims, dt::bf16, tag::any);
@@ -92,7 +92,7 @@ static void amx_matmul(const int32_t &r, const int32_t &c,
   stream.wait();
 }
 
-static void amx_inner_product(int32_t const &n, int32_t const &oc,
+static auto amx_inner_product(int32_t const &n, int32_t const &oc,
                               int32_t const &ic, const float *s,
                               const float* w, dnnl::engine &engine,
                               dnnl::stream &stream) {
@@ -127,18 +127,22 @@ static void amx_inner_product(int32_t const &n, int32_t const &oc,
   args.insert({DNNL_ARG_SRC, s_mem});
   args.insert({DNNL_ARG_WEIGHTS, w_mem});
   args.insert({DNNL_ARG_DST, dst_mem});
+  auto s = std::chrono::high_resolution_clock::now();
   prim.execute(stream, args);
+  auto e = std::chrono::high_resolution_clock::now();
+  auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(e - s).count();
   stream.wait();
+  return dur;
 }
 
-static void ip_distance_amx(const float* queries,
+static auto ip_distance_amx(const float* queries,
                                      const float* data,
                                      int32_t queries_size,
                                      int32_t data_size,
                                      int32_t dim,
                                      dnnl::engine &engine,
                                      dnnl::stream &stream) {
-  amx_inner_product(
+  return amx_inner_product(
     queries_size, data_size, dim, queries, data, engine, stream);
 }
 
