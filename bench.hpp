@@ -1,12 +1,13 @@
 #pragma once
 
+#include <iostream>
+#include <string>
 #include <chrono>
-#include <optional>
 #include <random>
 #include "dist.hpp"
 #include "VariadicTable.hpp"
 
-using pprinter = VariadicTable<double, double, double, double>;
+using pprinter = VariadicTable<std::string, double, double, double, double>;
 
 namespace avs {
 
@@ -16,7 +17,7 @@ public:
     dnnl::engine engine;
     dnnl::stream stream;
 
-    void run_ip_1_x_N(uint64_t size) {
+    void run_ip_1_x_N(uint64_t size, pprinter& pt) {
         uint64_t mat_a_size = 1;
         uint64_t mat_a_dim = size;
         uint64_t mat_b_size = size;
@@ -40,17 +41,16 @@ public:
             }
         }
 
-        std::cout << "Data size: " << ((double)(size * size * 4) + (double)(size * 1 * 4)) / pow(10, 6) << " MiB" << std::endl;
+        double data_size = ((double)(size * size * 4) + (double)(size * 1 * 4)) / pow(10, 6);
         uint64_t total_flop = (uint64_t)mat_b_size * (2 * (uint64_t)mat_a_dim - 1);
-        std::cout << "FLOP: " << total_flop << std::endl;
 
         if (!only_amx) {
             auto start = std::chrono::high_resolution_clock::now();
             ip_distance_avx512(mat_a.data(), mat_b.data(), mat_b_size, mat_b_dim, engine, stream);
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-            std::cout << "IP 1 x N AVX512: " << dur << " ms" << std::endl;
-            std::cout << "GFLOPS: " << ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3))) << std::endl;
+            double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
+            pt.addRow("IP / AVX 512 / 1 x N", data_size, total_flop, dur, gflops);
         }
 
         {
@@ -58,8 +58,8 @@ public:
             ip_distance_amx(mat_a.data(), mat_b.data(), mat_a_size, mat_b_size, mat_b_dim, engine, stream);
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-            std::cout << "IP 1 x N AMX: " << dur << " ms" << std::endl;
-            std::cout << "GFLOPS: " << ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3))) << std::endl;
+            double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
+            pt.addRow("IP / AMX / 1 x N", data_size, total_flop, dur, gflops);
         }
     }
 
@@ -100,8 +100,8 @@ public:
             }
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-            std::cout << "IP N x N AVX512: " << dur << " ms" << std::endl;
-            std::cout << "GFLOPS: " << ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3))) << std::endl;
+            double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
+            pt.addRow("IP / AVX 512 / N x N", data_size, total_flop, dur, gflops);
         }
 
         {
@@ -110,7 +110,7 @@ public:
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
-            pt.addRow(data_size, total_flop, dur, gflops);
+            pt.addRow("IP / AMX / N x N", data_size, total_flop, dur, gflops);
         }
     }
 };
@@ -125,17 +125,19 @@ void run_bench() {
 
     // Just bench AMX
     bench.only_amx = true;
-    pprinter pt({"Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
+    pprinter pt1({"Mode", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
     std::vector<uint64_t> sizes = {64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768};
     for (auto size : sizes) {
-        bench.run_ip_N_x_N(size, pt);
+        bench.run_ip_N_x_N(size, pt1);
     }
-    pt.print(std::cout);
+    pt1.print(std::cout);
 
     // Compare AMX and AVX512
-    // bench.only_amx = false;
-    // bench.run_ip_1_x_N(8192);
-    // bench.run_ip_N_x_N(8192);
+    bench.only_amx = false;
+    pprinter pt2({"Mode", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
+    bench.run_ip_1_x_N(8192, pt2);
+    bench.run_ip_N_x_N(8192, pt2);
+    pt2.print(std::cout);
 }
 
 } // namespace avs
