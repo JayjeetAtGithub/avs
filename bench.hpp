@@ -16,8 +16,18 @@ public:
     bool only_amx = false;
     dnnl::engine engine;
     dnnl::stream stream;
+    pprinter *pt;
 
-    void run_ip_1_x_N(uint64_t size, pprinter& pt) {
+    Benchmark(dnnl::engine engine, dnnl::stream stream) : engine(engine), stream(stream) {
+        pt = new pprinter({"Mode", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
+    }
+
+    void print_results() {
+        pt->print(std::cout);
+        pt = new pprinter({"Mode", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
+    }
+ 
+    void run_ip_1_x_N(uint64_t size) {
         uint64_t mat_a_size = 1;
         uint64_t mat_a_dim = size;
         uint64_t mat_b_size = size;
@@ -50,7 +60,7 @@ public:
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
-            pt.addRow("IP / AVX 512 / 1 x N", data_size, total_flop, dur, gflops);
+            pt->addRow("IP / AVX 512 / 1 x N", data_size, total_flop, dur, gflops);
         }
 
         {
@@ -59,11 +69,11 @@ public:
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
-            pt.addRow("IP / AMX / 1 x N", data_size, total_flop, dur, gflops);
+            pt->addRow("IP / AMX / 1 x N", data_size, total_flop, dur, gflops);
         }
     }
 
-    void run_ip_N_x_N(uint64_t size, pprinter& pt) {
+    void run_ip_N_x_N(uint64_t size) {
         uint64_t mat_a_size = size;
         uint64_t mat_a_dim = size;
         uint64_t mat_b_size = size;
@@ -101,7 +111,7 @@ public:
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
-            pt.addRow("IP / AVX 512 / N x N", data_size, total_flop, dur, gflops);
+            pt->addRow("IP / AVX 512 / N x N", data_size, total_flop, dur, gflops);
         }
 
         {
@@ -110,7 +120,7 @@ public:
             auto end = std::chrono::high_resolution_clock::now();
             auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
             double gflops = ((double)(total_flop / pow(10, 9))) / ((double)(dur / pow(10, 3)));
-            pt.addRow("IP / AMX / N x N", data_size, total_flop, dur, gflops);
+            pt->addRow("IP / AMX / N x N", data_size, total_flop, dur, gflops);
         }
     }
 };
@@ -119,25 +129,21 @@ void run_bench() {
     dnnl::engine engine(dnnl::engine::kind::cpu, 0);
     dnnl::stream stream(engine);
     
-    Benchmark bench;
-    bench.engine = engine;
-    bench.stream = stream;
+    Benchmark bench(engine, stream);
 
     // Just bench AMX
     bench.only_amx = true;
-    pprinter pt1({"Mode", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
     std::vector<uint64_t> sizes = {64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768};
     for (auto size : sizes) {
-        bench.run_ip_N_x_N(size, pt1);
+        bench.run_ip_N_x_N(size);
     }
-    pt1.print(std::cout);
+    bench.print_results();
 
     // Compare AMX and AVX512
     bench.only_amx = false;
-    pprinter pt2({"Mode", "Data size (MiB)", "Total FLOP", "Duration (ms)", "GFLOPS"});
-    bench.run_ip_1_x_N(8192, pt2);
-    bench.run_ip_N_x_N(8192, pt2);
-    pt2.print(std::cout);
+    bench.run_ip_1_x_N(8192);
+    bench.run_ip_N_x_N(8192);
+    bench.print_results();
 }
 
 } // namespace avs
