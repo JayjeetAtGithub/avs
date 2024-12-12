@@ -4,7 +4,7 @@
 #include <random>
 #include "dist.hpp"
 
-#define CONST_A 8192
+#define CONST_A 4096
 
 namespace avs {
 
@@ -77,6 +77,9 @@ void run_ip_N_x_N(dnnl::engine &engine, dnnl::stream &stream) {
             mat_b[i * mat_b_dim + j] = distrib(rng);
         }
     }
+
+    __mm_prefetch(mat_a.data(), _MM_HINT_T2);
+    __mm_prefetch(mat_b.data(), _MM_HINT_T2);
 
     uint64_t total_flop = (uint64_t)mat_a_size * (uint64_t)mat_b_size * (2 * (uint64_t)mat_a_dim - 1);
     std::cout << "Total Floating Point Operations: " << total_flop << std::endl;
